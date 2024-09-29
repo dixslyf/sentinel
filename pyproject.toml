@@ -7,6 +7,8 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.12"
+mediapipe = "^0.10.15"
+opencv-python = "^4.10.0.84"
 
 [tool.poetry.scripts]
 sentinel = "sentinel.cli:run"
