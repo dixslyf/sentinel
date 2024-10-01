@@ -175,3 +175,6 @@ devenv.local.nix
 # Machine learning models
 *.pt
 *.tflite
+
+# Pyenv Python Version
+*.python-version
