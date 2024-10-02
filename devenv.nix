@@ -15,4 +15,8 @@
       activate.enable = true;
     };
   };
+
+  pre-commit.hooks = {
+    black.enable = true;
+  };
 }
