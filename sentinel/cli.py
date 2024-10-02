@@ -1,11 +1,18 @@
+import asyncio
 from argparse import ArgumentParser
 
 import cv2
 import mediapipe as mp
-import numpy as np
 
-from sentinel.detect import MediaPipeAsyncDetector, visualise_detections
-from sentinel.video import Frame, OpenCVVideoSource
+from sentinel.alert.filters import Cooldown
+from sentinel.alert.subscribers import DesktopNotificationSubscriber
+from sentinel.alert.video import VideoDetectorEmitter
+from sentinel.video import OpenCVRawVideoStream, OpenCVViewer, VideoStream
+from sentinel.video.detect import (
+    DetectionResultVisualiser,
+    Detector,
+    MediaPipeRawDetector,
+)
 
 # MediaPipe has a weird way of importing stuff.
 BaseOptions = mp.tasks.BaseOptions
@@ -22,9 +29,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def run():
-    args = parse_args()
-
+async def run(args):
     # Capture video from the camera using OpenCV.
     capture = cv2.VideoCapture(0)
     if not capture.isOpened():
@@ -32,39 +37,39 @@ def run():
         capture.release()
         return
 
-    # Create the video source and object detector.
-    with OpenCVVideoSource(capture) as source, MediaPipeAsyncDetector(
+    async with OpenCVRawVideoStream(capture) as raw_stream, MediaPipeRawDetector(
         ObjectDetectorOptions(
             base_options=BaseOptions(model_asset_path=args.model_path),
             score_threshold=0.5,
             max_results=5,
-        )
-    ) as detector:
+        ),
+    ) as raw_detector:
+        stream = VideoStream("WebCam", raw_stream)
+        detector = Detector(raw_detector)
+        visualiser = DetectionResultVisualiser()
+        viewer = OpenCVViewer("WebCam")
+        vid_detect_emitter = VideoDetectorEmitter(stream, detector)
+        cooldown_filter = Cooldown(5)
+        desktop_notif = DesktopNotificationSubscriber()
+
+        await stream.subscribe_async(detector)
+        await detector.subscribe_async(visualiser)
+        await detector.subscribe_async(vid_detect_emitter)
+        await vid_detect_emitter.subscribe_async(cooldown_filter)
+        await cooldown_filter.subscribe_async(desktop_notif)
+
+        await visualiser.subscribe_async(viewer)
+
+        asyncio.create_task(stream.start())
+
+        # Quit if `q` is pressed.
         while True:
-            # Capture a single frame.
-            input_frame = source.next_frame()
-            if input_frame is None:
-                print("Failed to grab frame (disconnected?). Aborting...")
+            await asyncio.sleep(0)
+            if cv2.waitKey(1) == ord("q"):
+                await stream.stop()
                 break
 
-            detector.detect_async(input_frame)
 
-            # The detector updates the `result` variable asychronously.
-            # We visualise the result onto the frame and then show it.
-            last_result = detector.last_result()
-            if last_result is not None:
-                frame_r, detections = last_result
-
-                # The MediaPipe detector uses a non-writable NumPy array as the data,
-                # so we need to copy it.
-                frame_w = Frame(frame_r.timestamp, np.copy(frame_r.data))
-
-                # Display the resulting frame
-                frame_v = visualise_detections(frame_w, detections)
-                cv2.imshow("frame", frame_v.data)
-
-                # Quit if `q` is pressed.
-                if cv2.waitKey(1) == ord("q"):
-                    break
-
-        cv2.destroyAllWindows()
+def entry():
+    args = parse_args()
+    asyncio.run(run(args))
