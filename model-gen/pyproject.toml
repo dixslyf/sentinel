@@ -17,6 +17,11 @@ onnx2tf = ">1.17.5,<=1.22.3"
 onnxslim = ">=0.1.31"
 onnxruntime = "^1.19.2"
 tflite-support = "^0.4.4"
+albumentations = "^1.4.17"
+pyyaml = "^6.0.2"
+opencv-python = "^4.10.0.84"
+roboflow = "^1.1.47"
+fiftyone = "^1.0.0"
 
 [build-system]
 requires = ["poetry-core"]
