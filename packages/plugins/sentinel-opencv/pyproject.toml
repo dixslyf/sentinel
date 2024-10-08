@@ -5,7 +5,7 @@ description = "OpenCV plugin for Sentinel."
 authors = ["Dixon Sean Low Yan Feng", "Keith Neo Kai Si"]
 
 [tool.poetry.dependencies]
-sentinel-core = { path = "../sentinel-core", develop = true }
+sentinel-core = { path = "../../sentinel-core", develop = true }
 python = "^3.12"
 opencv-python = "^4.10.0.84"
 

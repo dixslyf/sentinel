@@ -12,6 +12,22 @@ files = [
 ]
 
 [[package]]
+name = "aioreactive"
+version = "0.20.0"
+description = "sync/await Reactive Tools for Python 3.10+"
+optional = false
+python-versions = "<4,>=3.10"
+files = [
+    {file = "aioreactive-0.20.0-py3-none-any.whl", hash = "sha256:8887a6cd5ff8494a953b580e22940dc52d265b2555f4c652afefb14d21ac64f9"},
+    {file = "aioreactive-0.20.0.tar.gz", hash = "sha256:2da08e5a7a722350fab082ee1426720b4e650adbcac4ff3839e29e676741d70d"},
+]
+
+[package.dependencies]
+Expression = ">=5.3.0,<6.0.0"
+reactivex = ">=4.0.0,<5.0.0"
+typing-extensions = ">=4.1.1,<5.0.0"
+
+[[package]]
 name = "attrs"
 version = "24.2.0"
 description = "Classes Without Boilerplate"
@@ -108,6 +124,17 @@ files = [
 
 [package.dependencies]
 pycparser = "*"
+
+[[package]]
+name = "colorama"
+version = "0.4.6"
+description = "Cross-platform colored terminal text."
+optional = false
+python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,!=3.6.*,>=2.7"
+files = [
+    {file = "colorama-0.4.6-py2.py3-none-any.whl", hash = "sha256:4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6"},
+    {file = "colorama-0.4.6.tar.gz", hash = "sha256:08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44"},
+]
 
 [[package]]
 name = "contourpy"
@@ -207,6 +234,24 @@ files = [
 [package.extras]
 docs = ["ipython", "matplotlib", "numpydoc", "sphinx"]
 tests = ["pytest", "pytest-cov", "pytest-xdist"]
+
+[[package]]
+name = "expression"
+version = "5.3.0"
+description = "Practical functional programming for Python 3.11+"
+optional = false
+python-versions = "<4,>=3.10"
+files = [
+    {file = "expression-5.3.0-py3-none-any.whl", hash = "sha256:951a07aa3e8676ca42af0f29ca2c4d01ea0742317fde981cba8cf49a0a118064"},
+    {file = "expression-5.3.0.tar.gz", hash = "sha256:07a43669622851a413897b118319b4c9ac03e8251b6228683ebbf22f12827122"},
+]
+
+[package.dependencies]
+typing-extensions = ">=4.6.0"
+
+[package.extras]
+all = ["pydantic (>=2.6.2,<3.0.0)"]
+pydantic = ["pydantic (>=2.6.2,<3.0.0)"]
 
 [[package]]
 name = "flatbuffers"
@@ -353,6 +398,21 @@ numpy = ">=1.24"
 scipy = {version = ">=1.11.1", markers = "python_version >= \"3.12\""}
 
 [[package]]
+name = "jeepney"
+version = "0.8.0"
+description = "Low-level, pure Python DBus protocol wrapper."
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "jeepney-0.8.0-py3-none-any.whl", hash = "sha256:c0a454ad016ca575060802ee4d590dd912e35c122fa04e70306de3d076cce755"},
+    {file = "jeepney-0.8.0.tar.gz", hash = "sha256:5efe48d255973902f6badc3ce55e2aa6c5c3b3bc642059ef3a91247bcfcc5806"},
+]
+
+[package.extras]
+test = ["async-timeout", "pytest", "pytest-asyncio (>=0.17)", "pytest-trio", "testpath", "trio"]
+trio = ["async_generator", "trio"]
+
+[[package]]
 name = "kiwisolver"
 version = "1.4.7"
 description = "A fast implementation of the Cassowary constraint solver"
@@ -474,6 +534,24 @@ files = [
     {file = "kiwisolver-1.4.7-pp39-pypy39_pp73-win_amd64.whl", hash = "sha256:0c6c43471bc764fad4bc99c5c2d6d16a676b1abf844ca7c8702bdae92df01ee0"},
     {file = "kiwisolver-1.4.7.tar.gz", hash = "sha256:9893ff81bd7107f7b685d3017cc6583daadb4fc26e4a888350df530e41980a60"},
 ]
+
+[[package]]
+name = "loguru"
+version = "0.6.0"
+description = "Python logging made (stupidly) simple"
+optional = false
+python-versions = ">=3.5"
+files = [
+    {file = "loguru-0.6.0-py3-none-any.whl", hash = "sha256:4e2414d534a2ab57573365b3e6d0234dfb1d84b68b7f3b948e6fb743860a77c3"},
+    {file = "loguru-0.6.0.tar.gz", hash = "sha256:066bd06758d0a513e9836fd9c6b5a75bfb3fd36841f4b996bc60b547a309d41c"},
+]
+
+[package.dependencies]
+colorama = {version = ">=0.3.4", markers = "sys_platform == \"win32\""}
+win32-setctime = {version = ">=1.0.0", markers = "sys_platform == \"win32\""}
+
+[package.extras]
+dev = ["Sphinx (>=4.1.1)", "black (>=19.10b0)", "colorama (>=0.3.4)", "docutils (==0.16)", "flake8 (>=3.7.7)", "isort (>=5.1.1)", "pytest (>=4.6.2)", "pytest-cov (>=2.7.1)", "sphinx-autobuild (>=0.7.1)", "sphinx-rtd-theme (>=0.4.3)", "tox (>=3.9.0)"]
 
 [[package]]
 name = "matplotlib"
@@ -619,6 +697,21 @@ numpy = [
 dev = ["absl-py", "pyink", "pylint (>=2.6.0)", "pytest", "pytest-xdist"]
 
 [[package]]
+name = "notify-py"
+version = "0.3.43"
+description = "Cross-platform desktop notification library for Python"
+optional = false
+python-versions = "<4.0,>=3.6"
+files = [
+    {file = "notify_py-0.3.43-py3-none-any.whl", hash = "sha256:90da686b480bf05d033b21fb5118662bb7a4c68e68cb21d93a048ca7b867f9b4"},
+    {file = "notify_py-0.3.43.tar.gz", hash = "sha256:16ee146d48f16bae5dad233db66014a387efd2c6ed2c4caf1e08aef432070513"},
+]
+
+[package.dependencies]
+jeepney = {version = "*", markers = "sys_platform == \"linux\""}
+loguru = ">=0.5.3,<=0.6.0"
+
+[[package]]
 name = "numpy"
 version = "2.1.2"
 description = "Fundamental package for array computing in Python"
@@ -694,6 +787,25 @@ files = [
     {file = "opencv_contrib_python-4.10.0.84-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:a261223db41f6e512d76deaf21c8fcfb4fbbcbc2de62ca7f74a05f2c9ee489ef"},
     {file = "opencv_contrib_python-4.10.0.84-cp37-abi3-win32.whl", hash = "sha256:2a36257ec1375d1bec2a62177ea39828ff9804de6831ee39646bdc875c343cec"},
     {file = "opencv_contrib_python-4.10.0.84-cp37-abi3-win_amd64.whl", hash = "sha256:47ec3160dae75f70e099b286d1a2e086d20dac8b06e759f60eaf867e6bdecba7"},
+]
+
+[package.dependencies]
+numpy = {version = ">=1.26.0", markers = "python_version >= \"3.12\""}
+
+[[package]]
+name = "opencv-python"
+version = "4.10.0.84"
+description = "Wrapper package for OpenCV python bindings."
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "opencv-python-4.10.0.84.tar.gz", hash = "sha256:72d234e4582e9658ffea8e9cae5b63d488ad06994ef12d81dc303b17472f3526"},
+    {file = "opencv_python-4.10.0.84-cp37-abi3-macosx_11_0_arm64.whl", hash = "sha256:fc182f8f4cda51b45f01c64e4cbedfc2f00aff799debebc305d8d0210c43f251"},
+    {file = "opencv_python-4.10.0.84-cp37-abi3-macosx_12_0_x86_64.whl", hash = "sha256:71e575744f1d23f79741450254660442785f45a0797212852ee5199ef12eed98"},
+    {file = "opencv_python-4.10.0.84-cp37-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:09a332b50488e2dda866a6c5573ee192fe3583239fb26ff2f7f9ceb0bc119ea6"},
+    {file = "opencv_python-4.10.0.84-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:9ace140fc6d647fbe1c692bcb2abce768973491222c067c131d80957c595b71f"},
+    {file = "opencv_python-4.10.0.84-cp37-abi3-win32.whl", hash = "sha256:2db02bb7e50b703f0a2d50c50ced72e95c574e1e5a0bb35a8a86d0b35c98c236"},
+    {file = "opencv_python-4.10.0.84-cp37-abi3-win_amd64.whl", hash = "sha256:32dbbd94c26f611dc5cc6979e6b7aa1f55a64d6b463cc1dcd3c95505a63e48fe"},
 ]
 
 [package.dependencies]
@@ -878,6 +990,20 @@ files = [
 six = ">=1.5"
 
 [[package]]
+name = "reactivex"
+version = "4.0.4"
+description = "ReactiveX (Rx) for Python"
+optional = false
+python-versions = ">=3.7,<4.0"
+files = [
+    {file = "reactivex-4.0.4-py3-none-any.whl", hash = "sha256:0004796c420bd9e68aad8e65627d85a8e13f293de76656165dffbcb3a0e3fb6a"},
+    {file = "reactivex-4.0.4.tar.gz", hash = "sha256:e912e6591022ab9176df8348a653fe8c8fa7a301f26f9931c9d8c78a650e04e8"},
+]
+
+[package.dependencies]
+typing-extensions = ">=4.1.1,<5.0.0"
+
+[[package]]
 name = "scipy"
 version = "1.14.1"
 description = "Fundamental algorithms for scientific computing in Python"
@@ -944,6 +1070,57 @@ type = "directory"
 url = "../sentinel-core"
 
 [[package]]
+name = "sentinel-desktop-notification-subscriber"
+version = "0.1.0"
+description = "Desktop notification subscriber plugin for Sentinel."
+optional = false
+python-versions = "^3.12"
+files = []
+develop = true
+
+[package.dependencies]
+notify-py = "^0.3.43"
+sentinel-core = {path = "../../sentinel-core", develop = true}
+
+[package.source]
+type = "directory"
+url = "../plugins/sentinel-desktop-notification-subscriber"
+
+[[package]]
+name = "sentinel-mediapipe"
+version = "0.1.0"
+description = "Mediapipe object detector plugin for Sentinel."
+optional = false
+python-versions = "^3.12"
+files = []
+develop = true
+
+[package.dependencies]
+mediapipe = "^0.10.14"
+sentinel-core = {path = "../../sentinel-core", develop = true}
+
+[package.source]
+type = "directory"
+url = "../plugins/sentinel-mediapipe"
+
+[[package]]
+name = "sentinel-opencv"
+version = "0.1.0"
+description = "OpenCV plugin for Sentinel."
+optional = false
+python-versions = "^3.12"
+files = []
+develop = true
+
+[package.dependencies]
+opencv-python = "^4.10.0.84"
+sentinel-core = {path = "../../sentinel-core", develop = true}
+
+[package.source]
+type = "directory"
+url = "../plugins/sentinel-opencv"
+
+[[package]]
 name = "six"
 version = "1.16.0"
 description = "Python 2 and 3 compatibility utilities"
@@ -974,7 +1151,32 @@ CFFI = ">=1.0"
 [package.extras]
 numpy = ["NumPy"]
 
+[[package]]
+name = "typing-extensions"
+version = "4.12.2"
+description = "Backported and Experimental Type Hints for Python 3.8+"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "typing_extensions-4.12.2-py3-none-any.whl", hash = "sha256:04e5ca0351e0f3f85c6853954072df659d0d13fac324d0072316b67d7794700d"},
+    {file = "typing_extensions-4.12.2.tar.gz", hash = "sha256:1a7ead55c7e559dd4dee8856e3a88b41225abfe1ce8df57b7c13915fe121ffb8"},
+]
+
+[[package]]
+name = "win32-setctime"
+version = "1.1.0"
+description = "A small Python utility to set file creation time on Windows"
+optional = false
+python-versions = ">=3.5"
+files = [
+    {file = "win32_setctime-1.1.0-py3-none-any.whl", hash = "sha256:231db239e959c2fe7eb1d7dc129f11172354f98361c4fa2d6d2d7e278baa8aad"},
+    {file = "win32_setctime-1.1.0.tar.gz", hash = "sha256:15cf5750465118d6929ae4de4eb46e8edae9a5634350c01ba582df868e932cb2"},
+]
+
+[package.extras]
+dev = ["black (>=19.3b0)", "pytest (>=4.6.2)"]
+
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "904271068c7d3c29e7acac4bff8b5f93e3c6c512b5f2ed637771bb1095f5efd2"
+content-hash = "0bec6be00b6c184ea100af6c50ab11d36c4a870d2b7fb77635fecbd4b3da5f77"

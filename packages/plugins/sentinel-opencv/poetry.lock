@@ -95,9 +95,9 @@ numpy = "^2.1.2"
 
 [package.source]
 type = "directory"
-url = "../sentinel-core"
+url = "../../sentinel-core"
 
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "4f8090c8a4699bccf5a0c540631c1201a8f3ba8e4b2167323ec6cb79f3cc63b2"
+content-hash = "e7d1dd33f8abadab31c7e40e20c4d7cb5db5a55b87b5b9afbb721f367075f8c6"

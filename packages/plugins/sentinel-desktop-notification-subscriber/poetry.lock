@@ -135,7 +135,7 @@ numpy = "^2.1.2"
 
 [package.source]
 type = "directory"
-url = "../sentinel-core"
+url = "../../sentinel-core"
 
 [[package]]
 name = "win32-setctime"
@@ -154,4 +154,4 @@ dev = ["black (>=19.3b0)", "pytest (>=4.6.2)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "4b19d078a156fcc23d3850914723e79a19e850554497fcbb11995cc4da060964"
+content-hash = "baa60ef2c0770ad1c493f350b74ea672abd13ecfc1eca1d76dc6ca2a725b302c"
