@@ -130,7 +130,7 @@ class RawDetector(Protocol):
     Protocol for raw object detectors.
     """
 
-    def detect_async(self, frame: Frame) -> Future[DetectionResult]:
+    async def detect(self, frame: Frame) -> DetectionResult:
         """
         Detects objects in the given frame asynchronously.
         """
@@ -145,7 +145,7 @@ class Detector(AsyncObservable[DetectionResult], AsyncObserver[Frame]):
         return await self._subject_out.subscribe_async(observer)
 
     async def asend(self, frame: Frame):
-        detection_result = await self._raw_detector.detect_async(frame)
+        detection_result = await self._raw_detector.detect(frame)
         await self._subject_out.asend(detection_result)
 
     async def athrow(self, error: Exception):
@@ -207,7 +207,7 @@ class MediaPipeRawDetector(RawDetector):
             mp_detector_opts
         )
 
-    def detect_async(self, frame: Frame) -> Future[DetectionResult]:
+    async def detect(self, frame: Frame) -> DetectionResult:
         if frame.timestamp is None:
             raise ValueError(
                 "MediaPipeAsyncDetector can only handle frames with timestamps."
@@ -229,7 +229,7 @@ class MediaPipeRawDetector(RawDetector):
 
         self._mp_detector.detect_async(mp_image, ts)
 
-        return fut
+        return await fut
 
     # For use with `async with` statements.
     async def __aenter__(self) -> Self:

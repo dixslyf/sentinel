@@ -1,27 +1,22 @@
 import time
+from asyncio import Queue
 
-from aioreactive import AsyncSubject
-
-from sentinel.alert import Alert, Emitter, Subscriber
+from sentinel.alert import Alert, RawEmitter, RawSubscriber
 
 
-class Cooldown(Emitter, Subscriber):
+class Cooldown(RawEmitter, RawSubscriber):
     def __init__(self, duration: float):
         self._time_start: float = 0
         self._duration: float = duration
-        self._subject_out: AsyncSubject = AsyncSubject()
+        self._queue: Queue = Queue()
 
-    async def subscribe_async(self, observer):
-        await self._subject_out.subscribe_async(observer)
-
-    async def asend(self, alert: Alert):
+    async def notify(self, alert: Alert) -> None:
         cur_time = time.time()
         if cur_time >= self._time_start + self._duration:
             self._time_start = cur_time
-            await self._subject_out.asend(alert)
+            await self._queue.put(alert)
 
-    async def athrow(self, error: Exception):
-        await self._subject_out.athrow(error)
-
-    async def aclose(self):
-        await self._subject_out.aclose()
+    async def next_alert(self) -> Alert:
+        alert = await self._queue.get()
+        self._queue.task_done()
+        return alert

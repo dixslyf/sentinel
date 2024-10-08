@@ -4,9 +4,11 @@ from argparse import ArgumentParser
 import cv2
 import mediapipe as mp
 
+from sentinel.alert import Emitter, Subscriber
 from sentinel.alert.filters import Cooldown
 from sentinel.alert.subscribers import DesktopNotificationSubscriber
-from sentinel.alert.video import VideoDetectorEmitter
+from sentinel.alert.video import VideoDetectorAlertEmitter
+from sentinel.plugins import discover_plugins
 from sentinel.video import OpenCVRawVideoStream, OpenCVViewer, VideoStream
 from sentinel.video.detect import (
     DetectionResultVisualiser,
@@ -30,6 +32,9 @@ def parse_args():
 
 
 async def run(args):
+    plugins = discover_plugins()
+    print(plugins)
+
     # Capture video from the camera using OpenCV.
     capture = cv2.VideoCapture(0)
     if not capture.isOpened():
@@ -48,19 +53,25 @@ async def run(args):
         detector = Detector(raw_detector)
         visualiser = DetectionResultVisualiser()
         viewer = OpenCVViewer("WebCam")
-        vid_detect_emitter = VideoDetectorEmitter(stream, detector)
+
+        vid_detect_emitter = VideoDetectorAlertEmitter(stream, detector)
         cooldown_filter = Cooldown(5)
-        desktop_notif = DesktopNotificationSubscriber()
+        desktop_notif_sub = Subscriber(DesktopNotificationSubscriber())
 
         await stream.subscribe_async(detector)
         await detector.subscribe_async(visualiser)
         await detector.subscribe_async(vid_detect_emitter)
-        await vid_detect_emitter.subscribe_async(cooldown_filter)
-        await cooldown_filter.subscribe_async(desktop_notif)
+
+        vid_detect_emitter = Emitter(vid_detect_emitter)
+        await vid_detect_emitter.subscribe_async(Subscriber(cooldown_filter))
+        cooldown_filter_emitter = Emitter(cooldown_filter)
+        await cooldown_filter_emitter.subscribe_async(desktop_notif_sub)
 
         await visualiser.subscribe_async(viewer)
 
         asyncio.create_task(stream.start())
+        asyncio.create_task(vid_detect_emitter.start())
+        asyncio.create_task(cooldown_filter_emitter.start())
 
         # Quit if `q` is pressed.
         while True:

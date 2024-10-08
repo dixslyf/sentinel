@@ -1,9 +1,10 @@
 import math
+from asyncio import Queue
 from typing import Any
 
-from aioreactive import AsyncObservable, AsyncObserver, AsyncSubject
+from aioreactive import AsyncObserver
 
-from sentinel.alert import Alert, ThreatLevel
+from sentinel.alert import Alert, RawEmitter, ThreatLevel
 from sentinel.video import VideoStream
 from sentinel.video.detect import DetectionResult, Detector
 
@@ -51,18 +52,18 @@ class VideoDetectionAlert(Alert):
         }
 
 
-class VideoDetectorEmitter(
-    AsyncObservable[VideoDetectionAlert], AsyncObserver[DetectionResult]
-):
+class VideoDetectorAlertEmitter(RawEmitter, AsyncObserver[DetectionResult]):
     # TODO: Ideally, there should be a mechanism to follow the chain of messages
     # to the source detector and video stream.
     def __init__(self, stream: VideoStream, detector: Detector):
         self._stream = stream
         self._detector = detector
-        self._subject_out: AsyncSubject[VideoDetectionAlert] = AsyncSubject()
+        self._queue: Queue = Queue()
 
-    async def subscribe_async(self, observer):
-        return await self._subject_out.subscribe_async(observer)
+    async def next_alert(self) -> Alert:
+        alert = await self._queue.get()
+        self._queue.task_done()
+        return alert
 
     async def asend(self, dr: DetectionResult):
         if not dr.detections:
@@ -71,10 +72,10 @@ class VideoDetectorEmitter(
         alert = VideoDetectionAlert(
             self._stream, self._detector, dr, ThreatLevel.Unknown
         )
-        await self._subject_out.asend(alert)
+        await self._queue.put(alert)
 
     async def athrow(self, error: Exception):
-        await self._subject_out.athrow(error)
+        raise error
 
     async def aclose(self):
-        await self._subject_out.aclose()
+        pass
