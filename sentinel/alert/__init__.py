@@ -1,8 +1,9 @@
+import asyncio
 import enum
 from enum import StrEnum
 from typing import Any, Optional, Protocol
 
-from aioreactive import AsyncObservable, AsyncObserver, AsyncSubject
+from aioreactive import AsyncDisposable, AsyncObservable, AsyncObserver, AsyncSubject
 
 
 class ThreatLevel(StrEnum):
@@ -126,3 +127,58 @@ class Emitter(AsyncObservable[Alert]):
     async def stop(self) -> None:
         self.pause()
         await self._subject_out.aclose()
+
+
+class Manager:
+    def __init__(self) -> None:
+        self._emitters: dict[RawEmitter, Emitter] = {}
+        self._subscribers: dict[RawSubscriber, Subscriber] = {}
+        self._subscriptions: dict[tuple[RawSubscriber, RawEmitter], AsyncDisposable] = (
+            {}
+        )
+
+    async def subscribe(
+        self, raw_subscriber: RawSubscriber, raw_emitter: RawEmitter
+    ) -> bool:
+        # Subscription already exists.
+        if (raw_subscriber, raw_emitter) in self._subscriptions:
+            return False
+
+        # At this point, the subscription doesn't exist yet.
+
+        self._register_subscriber(raw_subscriber)
+        self._register_emitter(raw_emitter)
+
+        subscriber = self._subscribers[raw_subscriber]
+        emitter = self._emitters[raw_emitter]
+
+        subscription = await emitter.subscribe_async(subscriber)
+        self._subscriptions[(raw_subscriber, raw_emitter)] = subscription
+        return True
+
+    async def unsubscribe(
+        self, raw_subscriber: RawSubscriber, raw_emitter: RawEmitter
+    ) -> bool:
+        if (raw_subscriber, raw_emitter) in self._subscriptions:
+            subscription = self._subscriptions[(raw_subscriber, raw_emitter)]
+            await subscription.dispose_async()
+            return True
+
+        # No existing subscription.
+        return False
+
+    async def start(self) -> None:
+        emitters = (emitter.start() for emitter in self._emitters.values())
+        await asyncio.gather(*emitters)
+
+    def _register_emitter(self, raw_emitter: RawEmitter) -> bool:
+        if raw_emitter in self._emitters:
+            return False
+        self._emitters[raw_emitter] = Emitter(raw_emitter)
+        return True
+
+    def _register_subscriber(self, raw_subscriber: RawSubscriber) -> bool:
+        if raw_subscriber in self._subscribers:
+            return False
+        self._subscribers[raw_subscriber] = Subscriber(raw_subscriber)
+        return True

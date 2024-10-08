@@ -1,10 +1,10 @@
 import asyncio
-from argparse import ArgumentParser
+from argparse import ArgumentParser, Namespace
 
 import cv2
 import mediapipe as mp
 
-from sentinel.alert import Emitter, Subscriber
+from sentinel.alert import Manager
 from sentinel.alert.filters import Cooldown
 from sentinel.alert.subscribers import DesktopNotificationSubscriber
 from sentinel.alert.video import VideoDetectorAlertEmitter
@@ -21,7 +21,7 @@ BaseOptions = mp.tasks.BaseOptions
 ObjectDetectorOptions = mp.tasks.vision.ObjectDetectorOptions
 
 
-def parse_args():
+def parse_args() -> Namespace:
     parser = ArgumentParser(prog="Sentinel")
     parser.add_argument(
         "model_path",
@@ -31,7 +31,7 @@ def parse_args():
     return parser.parse_args()
 
 
-async def run(args):
+async def run(args) -> None:
     plugins = discover_plugins()
     print(plugins)
 
@@ -56,22 +56,19 @@ async def run(args):
 
         vid_detect_emitter = VideoDetectorAlertEmitter(stream, detector)
         cooldown_filter = Cooldown(5)
-        desktop_notif_sub = Subscriber(DesktopNotificationSubscriber())
+        desktop_notif_sub = DesktopNotificationSubscriber()
 
         await stream.subscribe_async(detector)
         await detector.subscribe_async(visualiser)
         await detector.subscribe_async(vid_detect_emitter)
-
-        vid_detect_emitter = Emitter(vid_detect_emitter)
-        await vid_detect_emitter.subscribe_async(Subscriber(cooldown_filter))
-        cooldown_filter_emitter = Emitter(cooldown_filter)
-        await cooldown_filter_emitter.subscribe_async(desktop_notif_sub)
-
         await visualiser.subscribe_async(viewer)
 
+        alert_manager = Manager()
+        await alert_manager.subscribe(cooldown_filter, vid_detect_emitter)
+        await alert_manager.subscribe(desktop_notif_sub, cooldown_filter)
+
         asyncio.create_task(stream.start())
-        asyncio.create_task(vid_detect_emitter.start())
-        asyncio.create_task(cooldown_filter_emitter.start())
+        asyncio.create_task(alert_manager.start())
 
         # Quit if `q` is pressed.
         while True:
