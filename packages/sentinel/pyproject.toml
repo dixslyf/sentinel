@@ -8,6 +8,7 @@ authors = ["Dixon Sean Low Yan Feng", "Keith Neo Kai Si"]
 sentinel-core = { path = "../sentinel-core", develop = true }
 sentinel-opencv = { path = "../plugins/sentinel-opencv", develop = true }
 sentinel-desktop-notification-subscriber = { path = "../plugins/sentinel-desktop-notification-subscriber", develop = true }
+sentinel-ultralytics = { path = "../plugins/sentinel-ultralytics", develop = true }
 sentinel-mediapipe = { path = "../plugins/sentinel-mediapipe", develop = true }
 python = "^3.12"
 opencv-python = "^4.10.0.84"
