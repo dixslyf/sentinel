@@ -6,15 +6,10 @@ import mediapipe as mp
 
 from sentinel.alert import AlertManager
 from sentinel.alert.filters import Cooldown
-from sentinel.alert.subscribers import DesktopNotificationSubscriber
 from sentinel.alert.video import VideoDetectorAlertEmitter
-from sentinel.plugins import discover_plugins
-from sentinel.video import OpenCVVideoStream, OpenCVViewer, ReactiveVideoStream
-from sentinel.video.detect import (
-    DetectionResultVisualiser,
-    MediaPipeDetector,
-    ReactiveDetector,
-)
+from sentinel.plugins import load_plugins
+from sentinel.video import OpenCVViewer, ReactiveVideoStream
+from sentinel.video.detect import DetectionResultVisualiser, ReactiveDetector
 
 # MediaPipe has a weird way of importing stuff.
 BaseOptions = mp.tasks.BaseOptions
@@ -32,8 +27,37 @@ def parse_args() -> Namespace:
 
 
 async def run(args) -> None:
-    plugins = discover_plugins()
-    print(plugins)
+    # Load plugins.
+    plugins = load_plugins()
+    print(f"Loaded plugins: {[plugin.name for plugin in plugins]}")
+
+    opencv_plugin = next(plugin for plugin in plugins if plugin.name == "OpenCV")
+    mediapipe_plugin = next(plugin for plugin in plugins if plugin.name == "MediaPipe")
+    desktop_notification_subscriber_plugin = next(
+        plugin for plugin in plugins if plugin.name == "Desktop Notification Subscriber"
+    )
+
+    # Load the classes we need from the plugins.
+    # For this prototype, we already know what classes we need.
+    # In the final system, we will need to have a way for users to
+    # select and initialise these classes.
+    OpenCVVideoStream = next(
+        cls
+        for cls in opencv_plugin.video_stream_classes
+        if cls.__name__ == "OpenCVVideoStream"
+    )
+
+    MediaPipeDetector = next(
+        cls
+        for cls in mediapipe_plugin.detector_classes
+        if cls.__name__ == "MediaPipeDetector"
+    )
+
+    DesktopNotificationSubscriber = next(
+        cls
+        for cls in desktop_notification_subscriber_plugin.subscriber_classes
+        if cls.__name__ == "DesktopNotificationSubscriber"
+    )
 
     # Capture video from the camera using OpenCV.
     capture = cv2.VideoCapture(0)

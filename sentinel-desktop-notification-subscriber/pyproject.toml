@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "sentinel-desktop-notification-subscriber"
+version = "0.1.0"
+description = "Desktop notification subscriber plugin for Sentinel."
+authors = ["Dixon Sean Low Yan Feng", "Keith Neo Kai Si"]
+
+[tool.poetry.dependencies]
+sentinel-core = { path = "../sentinel-core", develop = true }
+python = "^3.12"
+notify-py = "^0.3.43"
+
+[tool.poetry.plugins."sentinel.plugins"]
+sentinel-desktop-notification-subscriber = "sentinel_desktop_notification_subscriber:DesktopNotificationSubscriberPlugin"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

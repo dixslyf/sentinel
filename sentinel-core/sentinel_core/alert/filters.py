@@ -1,7 +1,7 @@
 import time
 from asyncio import Queue
 
-from sentinel.alert import Alert, Emitter, Subscriber
+from sentinel_core.alert import Alert, Emitter, Subscriber
 
 
 class Cooldown(Emitter, Subscriber):
