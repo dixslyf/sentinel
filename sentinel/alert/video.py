@@ -4,16 +4,16 @@ from typing import Any
 
 from aioreactive import AsyncObserver
 
-from sentinel.alert import Alert, RawEmitter, ThreatLevel
-from sentinel.video import VideoStream
-from sentinel.video.detect import DetectionResult, Detector
+from sentinel.alert import Alert, Emitter, ThreatLevel
+from sentinel.video import ReactiveVideoStream
+from sentinel.video.detect import DetectionResult, ReactiveDetector
 
 
 class VideoDetectionAlert(Alert):
     def __init__(
         self,
-        stream: VideoStream,
-        detector: Detector,
+        stream: ReactiveVideoStream,
+        detector: ReactiveDetector,
         detection_result: DetectionResult,
         threat_level: ThreatLevel,
     ):
@@ -52,10 +52,10 @@ class VideoDetectionAlert(Alert):
         }
 
 
-class VideoDetectorAlertEmitter(RawEmitter, AsyncObserver[DetectionResult]):
+class VideoDetectorAlertEmitter(Emitter, AsyncObserver[DetectionResult]):
     # TODO: Ideally, there should be a mechanism to follow the chain of messages
     # to the source detector and video stream.
-    def __init__(self, stream: VideoStream, detector: Detector):
+    def __init__(self, stream: ReactiveVideoStream, detector: ReactiveDetector):
         self._stream = stream
         self._detector = detector
         self._queue: Queue = Queue()

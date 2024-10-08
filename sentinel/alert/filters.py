@@ -1,10 +1,10 @@
 import time
 from asyncio import Queue
 
-from sentinel.alert import Alert, RawEmitter, RawSubscriber
+from sentinel.alert import Alert, Emitter, Subscriber
 
 
-class Cooldown(RawEmitter, RawSubscriber):
+class Cooldown(Emitter, Subscriber):
     def __init__(self, duration: float):
         self._time_start: float = 0
         self._duration: float = duration

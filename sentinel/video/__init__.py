@@ -21,7 +21,7 @@ class Frame:
     data: np.ndarray
 
 
-class RawVideoStream(Protocol):
+class VideoStream(Protocol):
     """
     Protocol for raw video streams.
     """
@@ -38,10 +38,10 @@ class VideoStreamNoDataException(Exception):
     """
 
 
-class VideoStream(AsyncObservable[Frame]):
-    def __init__(self, name: str, raw_stream: RawVideoStream):
+class ReactiveVideoStream(AsyncObservable[Frame]):
+    def __init__(self, name: str, raw_stream: VideoStream):
         self._name: str = name
-        self._raw_stream: RawVideoStream = raw_stream
+        self._raw_stream: VideoStream = raw_stream
         self._run: bool = False
         self._subject: AsyncSubject[Frame] = AsyncSubject()
 
@@ -75,7 +75,7 @@ class VideoStream(AsyncObservable[Frame]):
         await self._subject.aclose()
 
 
-class OpenCVRawVideoStream(RawVideoStream):
+class OpenCVVideoStream(VideoStream):
     """
     An OpenCV raw video stream.
     """

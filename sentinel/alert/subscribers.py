@@ -1,9 +1,9 @@
 from notifypy import Notify
 
-from sentinel.alert import Alert, RawSubscriber
+from sentinel.alert import Alert, Subscriber
 
 
-class DesktopNotificationSubscriber(RawSubscriber):
+class DesktopNotificationSubscriber(Subscriber):
     """
     A subscriber that receives alerts in the form of desktop notifications.
     """

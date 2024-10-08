@@ -125,7 +125,7 @@ class DetectionResultVisualiser(AsyncObservable[Frame], AsyncObserver[DetectionR
         await self._subject_out.aclose()
 
 
-class RawDetector(Protocol):
+class Detector(Protocol):
     """
     Protocol for raw object detectors.
     """
@@ -136,9 +136,9 @@ class RawDetector(Protocol):
         """
 
 
-class Detector(AsyncObservable[DetectionResult], AsyncObserver[Frame]):
-    def __init__(self, raw_detector: RawDetector):
-        self._raw_detector: RawDetector = raw_detector
+class ReactiveDetector(AsyncObservable[DetectionResult], AsyncObserver[Frame]):
+    def __init__(self, raw_detector: Detector):
+        self._raw_detector: Detector = raw_detector
         self._subject_out: AsyncSubject[DetectionResult] = AsyncSubject()
 
     async def subscribe_async(self, observer):
@@ -155,7 +155,7 @@ class Detector(AsyncObservable[DetectionResult], AsyncObserver[Frame]):
         await self._subject_out.aclose()
 
 
-class MediaPipeRawDetector(RawDetector):
+class MediaPipeDetector(Detector):
     def __init__(
         self,
         mp_detector_opts: mp.tasks.vision.ObjectDetectorOptions,

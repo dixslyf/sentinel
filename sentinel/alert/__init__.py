@@ -61,7 +61,7 @@ class ExceptionAlert(Alert):
         }
 
 
-class RawSubscriber(Protocol):
+class Subscriber(Protocol):
     """
     A subscriber that receives alert notifications.
     """
@@ -72,12 +72,12 @@ class RawSubscriber(Protocol):
         """
 
 
-class Subscriber(AsyncObserver[Alert]):
+class ReactiveSubscriber(AsyncObserver[Alert]):
     """
     A subscriber that receives alert notifications.
     """
 
-    def __init__(self, raw_sub: RawSubscriber):
+    def __init__(self, raw_sub: Subscriber):
         self._raw_sub = raw_sub
 
     async def asend(self, alert: Alert):
@@ -91,7 +91,7 @@ class Subscriber(AsyncObserver[Alert]):
         pass
 
 
-class RawEmitter(Protocol):
+class Emitter(Protocol):
     """
     An emitter that generates alert notifications.
     """
@@ -102,13 +102,13 @@ class RawEmitter(Protocol):
         """
 
 
-class Emitter(AsyncObservable[Alert]):
+class ReactiveEmitter(AsyncObservable[Alert]):
     """
     An emitter that generates alert notifications.
     """
 
-    def __init__(self, raw_emitter: RawEmitter):
-        self._raw_emitter: RawEmitter = raw_emitter
+    def __init__(self, raw_emitter: Emitter):
+        self._raw_emitter: Emitter = raw_emitter
         self._subject_out: AsyncSubject = AsyncSubject()
         self._run: bool = False
 
@@ -129,17 +129,13 @@ class Emitter(AsyncObservable[Alert]):
         await self._subject_out.aclose()
 
 
-class Manager:
+class AlertManager:
     def __init__(self) -> None:
-        self._emitters: dict[RawEmitter, Emitter] = {}
-        self._subscribers: dict[RawSubscriber, Subscriber] = {}
-        self._subscriptions: dict[tuple[RawSubscriber, RawEmitter], AsyncDisposable] = (
-            {}
-        )
+        self._emitters: dict[Emitter, ReactiveEmitter] = {}
+        self._subscribers: dict[Subscriber, ReactiveSubscriber] = {}
+        self._subscriptions: dict[tuple[Subscriber, Emitter], AsyncDisposable] = {}
 
-    async def subscribe(
-        self, raw_subscriber: RawSubscriber, raw_emitter: RawEmitter
-    ) -> bool:
+    async def subscribe(self, raw_subscriber: Subscriber, raw_emitter: Emitter) -> bool:
         # Subscription already exists.
         if (raw_subscriber, raw_emitter) in self._subscriptions:
             return False
@@ -157,7 +153,7 @@ class Manager:
         return True
 
     async def unsubscribe(
-        self, raw_subscriber: RawSubscriber, raw_emitter: RawEmitter
+        self, raw_subscriber: Subscriber, raw_emitter: Emitter
     ) -> bool:
         if (raw_subscriber, raw_emitter) in self._subscriptions:
             subscription = self._subscriptions[(raw_subscriber, raw_emitter)]
@@ -171,14 +167,14 @@ class Manager:
         emitters = (emitter.start() for emitter in self._emitters.values())
         await asyncio.gather(*emitters)
 
-    def _register_emitter(self, raw_emitter: RawEmitter) -> bool:
+    def _register_emitter(self, raw_emitter: Emitter) -> bool:
         if raw_emitter in self._emitters:
             return False
-        self._emitters[raw_emitter] = Emitter(raw_emitter)
+        self._emitters[raw_emitter] = ReactiveEmitter(raw_emitter)
         return True
 
-    def _register_subscriber(self, raw_subscriber: RawSubscriber) -> bool:
+    def _register_subscriber(self, raw_subscriber: Subscriber) -> bool:
         if raw_subscriber in self._subscribers:
             return False
-        self._subscribers[raw_subscriber] = Subscriber(raw_subscriber)
+        self._subscribers[raw_subscriber] = ReactiveSubscriber(raw_subscriber)
         return True
