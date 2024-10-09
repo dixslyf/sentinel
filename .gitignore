@@ -181,3 +181,9 @@ devenv.local.nix
 
 # Ultralytics
 runs
+
+# Ignore common image formats
+.jpg
+.jpeg
+.png
+.gif
