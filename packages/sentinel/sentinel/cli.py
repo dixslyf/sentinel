@@ -124,7 +124,7 @@ async def run(args) -> None:
         ) as detector:  # type: ignore[call-arg, attr-defined]
             await start(detector)
     elif args.detector_plugin == "ultralytics":
-        detector = UltralyticsDetector("YOLO", "yolo_fine_tuned.pt")  # type: ignore[call-arg]
+        detector = UltralyticsDetector("YOLO", args.model_path)  # type: ignore[call-arg]
         await start(detector)
     else:
         raise AssertionError("Unreachable")
