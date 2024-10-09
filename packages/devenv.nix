@@ -1,5 +1,8 @@
 { pkgs, lib, config, inputs, ... }:
 
+let
+  pkgs-unstable = inputs.nixpkgs-unstable.legacyPackages.${pkgs.stdenv.system};
+in
 {
   packages = with pkgs; [ git ];
 
@@ -10,6 +13,9 @@
   };
 
   pre-commit.hooks = {
-    black.enable = true;
+    black = {
+      enable = true;
+      package = pkgs-unstable.black;
+    };
   };
 }
