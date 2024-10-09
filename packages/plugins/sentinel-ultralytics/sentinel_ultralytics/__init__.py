@@ -58,11 +58,19 @@ class UltralyticsDetector(Detector):
                 cls_str = result.names[int(cls.item())]
 
                 pred_categories = [PredictedCategory(cls_str, conf.item())]
+
+                # The x and y coordinates from the model are the center point
+                # of the bounding box, not the top corner that we want,
+                # so we need to do a bit of math.
+                x = xywh[0].item()
+                y = xywh[1].item()
+                w = xywh[2].item()
+                h = xywh[3].item()
                 bounding_box = BoundingBox(
-                    int(xywh[0].item()),  # x
-                    int(xywh[1].item()),  # y
-                    int(xywh[2].item()),  # w
-                    int(xywh[3].item()),  # h
+                    int(x - w / 2),
+                    int(y - h / 2),
+                    int(w),
+                    int(h)
                 )
                 detections.append(Detection(pred_categories, bounding_box))
 
