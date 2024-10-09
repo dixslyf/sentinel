@@ -9,7 +9,10 @@
     libraries = with pkgs; [
       stdenv.cc.cc.lib
     ];
-    poetry.enable = true;
+    poetry = {
+      enable = true;
+      activate.enable = true;
+    };
   };
 
   env.FIFTYONE_DATABASE_URI = "mongodb://localhost:27017";
