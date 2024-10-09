@@ -178,3 +178,6 @@ devenv.local.nix
 
 # Pyenv Python Version
 *.python-version
+
+# Ultralytics
+runs
