@@ -5,7 +5,7 @@
 
   languages.python = {
     enable = true;
-    package = pkgs.python311;
+    package = pkgs.python312;
     libraries = with pkgs; [
       stdenv.cc.cc.lib
     ];
