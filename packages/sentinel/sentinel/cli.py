@@ -3,6 +3,7 @@ from argparse import ArgumentParser, Namespace
 
 import cv2
 import mediapipe as mp
+from sentinel_core.video import VideoStreamNoDataException
 
 from sentinel.alert import AlertManager
 from sentinel.alert.filters import Cooldown
@@ -30,6 +31,12 @@ def parse_args() -> Namespace:
         "model_path",
         metavar="model-path",
         help="Path to the object detection model (format depends on the plugin)",
+    )
+
+    parser.add_argument(
+        "--capture-source",
+        help="Either a path to a video or image file, the index of a camera, or the URL to an IP camera (default: 0)",
+        default=0,
     )
 
     return parser.parse_args()
@@ -78,7 +85,15 @@ async def run(args) -> None:
     )
 
     # Capture video from the camera using OpenCV.
-    capture = cv2.VideoCapture(0)
+    capture_src: int | str
+    try:
+        # Camera index.
+        capture_src = int(args.capture_source)
+    except ValueError:
+        # Path to a video or image, or the URL of an IP camera.
+        capture_src = args.capture_source
+
+    capture = cv2.VideoCapture(capture_src)
     if not capture.isOpened():
         print("Failed to open camera. Aborting...")
         capture.release()
@@ -89,7 +104,7 @@ async def run(args) -> None:
             r_stream = ReactiveVideoStream("WebCam", stream)
             r_detector = ReactiveDetector(detector)
             r_visualiser = DetectionResultVisualiser()
-            r_viewer = OpenCVViewer("WebCam")
+            r_viewer = OpenCVViewer("WebCam", always_show=True)
 
             vid_detect_emitter = VideoDetectorAlertEmitter(r_stream, r_detector)
             cooldown_filter = Cooldown(5)
@@ -104,7 +119,13 @@ async def run(args) -> None:
             await alert_manager.subscribe(cooldown_filter, vid_detect_emitter)
             await alert_manager.subscribe(desktop_notif_sub, cooldown_filter)
 
-            asyncio.create_task(r_stream.start())
+            async def log_stream_exception(start_awaitable):
+                try:
+                    await start_awaitable
+                except VideoStreamNoDataException:
+                    print("End of capture source.")
+
+            asyncio.create_task(log_stream_exception(r_stream.start()))
             asyncio.create_task(alert_manager.start())
 
             # Quit if `q` is pressed.

@@ -41,14 +41,17 @@ class ReactiveVideoStream(AsyncObservable[Frame]):
 
 
 class OpenCVViewer(AsyncObserver[Frame]):
-    def __init__(self, win_name: str):
+    def __init__(self, win_name: str, always_show: bool = False):
         self._win_name = win_name
+        self._always_show = always_show
 
     async def asend(self, frame: Frame):
         cv2.imshow(self._win_name, frame.data)
 
     async def athrow(self, error):
-        cv2.destroyWindow(self._win_name)
+        if not self._always_show:
+            cv2.destroyWindow(self._win_name)
 
     async def aclose(self):
-        cv2.destroyWindow(self._win_name)
+        if not self._always_show:
+            cv2.destroyWindow(self._win_name)
