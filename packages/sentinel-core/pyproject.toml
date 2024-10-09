@@ -1,13 +1,12 @@
 [tool.poetry]
-name = "Sentinel"
+name = "sentinel-core"
 version = "0.1.0"
-description = "Home security and alert system."
+description = "Core library for Sentinel."
 authors = ["Dixon Sean Low Yan Feng", "Keith Neo Kai Si"]
-readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.12"
-
+numpy = "^2.1.2"
 
 [build-system]
 requires = ["poetry-core"]
