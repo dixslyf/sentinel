@@ -175,3 +175,15 @@ devenv.local.nix
 # Machine learning models
 *.pt
 *.tflite
+
+# Pyenv Python Version
+*.python-version
+
+# Ultralytics
+runs
+
+# Ignore common image formats
+.jpg
+.jpeg
+.png
+.gif

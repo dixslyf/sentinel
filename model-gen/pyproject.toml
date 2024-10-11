@@ -1,0 +1,29 @@
+[tool.poetry]
+name = "sentinel-model-gen"
+version = "0.1.0"
+description = "Training and export for Sentinel's default object detection model."
+authors = ["Dixon Sean Low Yan Feng", "Keith Neo Kai Si"]
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.12"
+ultralytics = "^8.3.1"
+jupyterlab = "^4.2.5"
+tf-keras = "^2.17.0"
+sng4onnx = ">=1.0.1"
+onnx-graphsurgeon = ">=0.3.26"
+onnx = ">=1.12.0"
+onnx2tf = ">1.17.5,<=1.22.3"
+onnxslim = ">=0.1.31"
+onnxruntime = "^1.19.2"
+albumentations = "^1.4.17"
+pyyaml = "^6.0.2"
+opencv-python = "^4.10.0.84"
+roboflow = "^1.1.47"
+fiftyone = "^1.0.0"
+ray = {extras = ["tune"], version = "^2.37.0"}
+ipywidgets = "^8.1.5"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
