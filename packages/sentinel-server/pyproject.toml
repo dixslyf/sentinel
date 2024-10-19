@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "Sentinel"
+name = "sentinel-server"
 version = "0.1.0"
-description = "Home security and alert system."
+description = "Server for Sentinel, a home security and alert system."
 authors = ["Dixon Sean Low Yan Feng", "Keith Neo Kai Si"]
 
 [tool.poetry.dependencies]
@@ -16,7 +16,7 @@ aioreactive = "^0.20.0"
 expression = "^5.3.0"
 
 [tool.poetry.scripts]
-sentinel = "sentinel.cli:entry"
+sentinel-server = "sentinel_server.cli:entry"
 
 [build-system]
 requires = ["poetry-core"]

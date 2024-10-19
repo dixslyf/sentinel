@@ -6,8 +6,8 @@ from aioreactive import AsyncObserver
 from sentinel_core.alert import Alert, Emitter, ThreatLevel
 from sentinel_core.video.detect import DetectionResult
 
-from sentinel.video import ReactiveVideoStream
-from sentinel.video.detect import ReactiveDetector
+from sentinel_server.video import ReactiveVideoStream
+from sentinel_server.video.detect import ReactiveDetector
 
 
 class VideoDetectionAlert(Alert):

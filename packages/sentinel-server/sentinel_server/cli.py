@@ -5,12 +5,12 @@ import cv2
 import mediapipe as mp
 from sentinel_core.video import VideoStreamNoDataException
 
-from sentinel.alert import AlertManager
-from sentinel.alert.filters import Cooldown
-from sentinel.alert.video import VideoDetectorAlertEmitter
-from sentinel.plugins import load_plugins
-from sentinel.video import OpenCVViewer, ReactiveVideoStream
-from sentinel.video.detect import DetectionResultVisualiser, ReactiveDetector
+from sentinel_server.alert import AlertManager
+from sentinel_server.alert.filters import Cooldown
+from sentinel_server.alert.video import VideoDetectorAlertEmitter
+from sentinel_server.plugins import load_plugins
+from sentinel_server.video import OpenCVViewer, ReactiveVideoStream
+from sentinel_server.video.detect import DetectionResultVisualiser, ReactiveDetector
 
 # MediaPipe has a weird way of importing stuff.
 BaseOptions = mp.tasks.BaseOptions
