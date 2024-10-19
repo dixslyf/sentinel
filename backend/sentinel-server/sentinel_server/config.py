@@ -1,8 +1,11 @@
 import dataclasses
+import logging
 import os
 from typing import Self
 
 import toml
+
+logger = logging.getLogger(__name__)
 
 
 @dataclasses.dataclass
@@ -24,11 +27,17 @@ class Configuration:
 
 def get_config(path: str) -> Configuration:
     if os.path.isfile(path):
-        print(f"Loading configuration from: {path}")
-        return Configuration.deserialise(path)
+        logger.info(f"Loading configuration from: `{path}`")
+
+        config = Configuration.deserialise(path)
+        logger.info(f"Successfully loaded configuration from: `{path}`")
+        logger.debug(f"Loaded configuration: {config}")
+
+        return config
     else:
-        print(f"Creating default configuration file at: {path}")
+        logger.info(f"Creating default configuration at: `{path}`")
         config = Configuration()
         os.makedirs(os.path.dirname(path), exist_ok=True)
         config.serialise(path)
+        logger.info(f"Successfully wrote default configuration to: `{path}`")
         return config
