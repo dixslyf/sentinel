@@ -5,9 +5,13 @@ import ultralytics
 from sentinel_core.alert import Subscriber
 from sentinel_core.plugins import Plugin
 from sentinel_core.video import Frame, VideoStream
-from sentinel_core.video.detect import (BoundingBox, Detection,
-                                        DetectionResult, Detector,
-                                        PredictedCategory)
+from sentinel_core.video.detect import (
+    BoundingBox,
+    Detection,
+    DetectionResult,
+    Detector,
+    PredictedCategory,
+)
 
 
 class ModelType(Enum):
@@ -54,7 +58,7 @@ class UltralyticsDetector(Detector):
         results = self._model(frame.data, verbose=False)
         for result in results:
             boxes = result.boxes
-            for (cls, conf, xywh) in zip(boxes.cls, boxes.conf, boxes.xywh):
+            for cls, conf, xywh in zip(boxes.cls, boxes.conf, boxes.xywh):
                 cls_str = result.names[int(cls.item())]
 
                 pred_categories = [PredictedCategory(cls_str, conf.item())]
@@ -67,10 +71,7 @@ class UltralyticsDetector(Detector):
                 w = xywh[2].item()
                 h = xywh[3].item()
                 bounding_box = BoundingBox(
-                    int(x - w / 2),
-                    int(y - h / 2),
-                    int(w),
-                    int(h)
+                    int(x - w / 2), int(y - h / 2), int(w), int(h)
                 )
                 detections.append(Detection(pred_categories, bounding_box))
 
