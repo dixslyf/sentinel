@@ -3,6 +3,7 @@ import logging
 import os
 from typing import Self
 
+import platformdirs
 import toml
 
 logger = logging.getLogger(__name__)
@@ -10,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 @dataclasses.dataclass
 class Configuration:
-    db_url: str = "sqlite://db.sqlite3"
+    db_url: str = f"sqlite://{platformdirs.user_data_dir("sentinel")}/db.sqlite3"
     plugin_whitelist: set[str] = dataclasses.field(default_factory=set)
 
     def serialise(self, path: str):
@@ -37,7 +38,6 @@ def get_config(path: str) -> Configuration:
     else:
         logger.info(f"Creating default configuration at: `{path}`")
         config = Configuration()
-        os.makedirs(os.path.dirname(path), exist_ok=True)
         config.serialise(path)
         logger.info(f"Successfully wrote default configuration to: `{path}`")
         return config

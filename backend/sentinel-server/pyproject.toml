@@ -19,6 +19,7 @@ tortoise-orm = "^0.21.7"
 bcrypt = "^4.2.0"
 toml = "^0.10.2"
 platformdirs = "^4.3.6"
+uvicorn = "^0.32.0"
 
 [tool.poetry.scripts]
 sentinel-server = "sentinel_server.cli:entry"
