@@ -14,7 +14,7 @@ python = "^3.12"
 opencv-python = "^4.10.0.84"
 aioreactive = "^0.20.0"
 expression = "^5.3.0"
-fastapi = "^0.115.2"
+fastapi = {extras = ["standard"], version = "^0.115.2"}
 tortoise-orm = "^0.21.7"
 bcrypt = "^4.2.0"
 toml = "^0.10.2"
@@ -22,7 +22,7 @@ platformdirs = "^4.3.6"
 uvicorn = "^0.32.0"
 
 [tool.poetry.scripts]
-sentinel-server = "sentinel_server.cli:entry"
+sentinel-server = "sentinel_server.start:entry"
 
 [build-system]
 requires = ["poetry-core"]
