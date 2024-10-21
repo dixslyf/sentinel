@@ -1,9 +1,6 @@
-import datetime
 import logging
-import secrets
 
 import bcrypt
-import jwt
 import tortoise
 from tortoise import fields
 from tortoise.models import Model
@@ -12,11 +9,6 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_USERNAME: str = "admin"
 DEFAULT_PASSWORD: str = "password"
-
-
-DEFAULT_JWT_DELTA: datetime.timedelta = datetime.timedelta(days=1)
-JWT_ALGO: str = "HS256"
-JWT_SECRET: str = secrets.token_urlsafe(nbytes=256)
 
 
 class User(Model):
@@ -94,39 +86,3 @@ async def ensure_default_user() -> User:
         user = await create_user(DEFAULT_USERNAME, DEFAULT_PASSWORD)
         logging.info("Created default user")
     return user
-
-
-def create_jwt_access_token(
-    username: str, expires_delta: datetime.timedelta = DEFAULT_JWT_DELTA
-) -> str:
-    """
-    Creates and returns a JSON web token (JWT) after authentication.
-
-    This function is intended to be used after the user interface has
-    authenticated with the backend.
-
-    Returns:
-        str: The JSON web token
-    """
-    to_encode = {"username": username, "exp": datetime.datetime.now() + expires_delta}
-    jwt_token = jwt.encode(to_encode, JWT_SECRET, algorithm=JWT_ALGO)
-
-    logger.info(f"Created JWT for: {username}")
-
-    return jwt_token
-
-
-def verify_jwt_access_token(token: str) -> bool:
-    """
-    Verifies that the given JSON web token (JWT) is valid.
-
-    Returns:
-        bool: True if the token is valid; otherwise, False
-    """
-    try:
-        payload: dict = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGO])
-        logger.info(f"JWT verified: {payload}")
-        return True
-    except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
-        logger.info(f"Invalid JWT token: {token}")
-        return False

@@ -1,24 +1,24 @@
 import logging
 import os
+import secrets
 import sys
-from typing import Annotated
+from typing import Optional
 
 import platformdirs
-from fastapi import Depends, FastAPI, Header, HTTPException, status
-from fastapi.responses import JSONResponse
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from fastapi import Request
+from fastapi.responses import RedirectResponse
+from nicegui import app, ui
+from starlette.middleware.base import BaseHTTPMiddleware
 from tortoise import Tortoise
 
 import sentinel_server.auth
 import sentinel_server.config
 from sentinel_server.plugins import discover_plugins, load_plugins
 
-app = FastAPI()
-security = HTTPBasic()
+UNRESTRICTED_PAGE_ROUTES: set[str] = {"/", "/login"}
 
 
-@app.on_event("startup")
-async def startup_event():
+async def setup():
     # Configure logging.
     log_level = os.environ.get("SENTINEL_LOG_LEVEL", "INFO").upper()
     if log_level not in ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"):
@@ -56,34 +56,70 @@ async def startup_event():
     logging.info("Sentinel started")
 
 
-@app.on_event("shutdown")
-async def shutdown_event():
+async def shutdown():
     await Tortoise.close_connections()
     logging.info("Sentinel shutdown")
 
 
-@app.post("/login")
-async def login(credentials: Annotated[HTTPBasicCredentials, Depends(security)]):
-    logging.info(f"Received login credentials for: {credentials.username}")
+@ui.page("/")
+def index():
+    return RedirectResponse("/login")
 
-    user: sentinel_server.auth.User = await sentinel_server.auth.User.get_or_none(
-        username=credentials.username
-    )
 
-    if not user or not user.verify_password(credentials.password):
-        logging.info(f"Authentication failed for: {credentials.username}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Basic"},
+@ui.page("/login")
+def login() -> Optional[RedirectResponse]:
+    if app.storage.user.get("authenticated", False):
+        return RedirectResponse("/dashboard")
+
+    with ui.card().classes("absolute-center"):
+        username_input = ui.input("Username")
+        password_input = ui.input(
+            "Password", password=True, password_toggle_button=True
         )
 
-    logging.info(f"Authentication succeeded for: {credentials.username}")
-    jwt_token = sentinel_server.auth.create_jwt_access_token(user.username)
-    return {"access_token": jwt_token, "token_type": "bearer"}
+    async def try_login() -> None:
+        logging.info(f"Checking login credentials for: {username_input.value}")
+
+        user: sentinel_server.auth.User = await sentinel_server.auth.User.get_or_none(
+            username=username_input.value
+        )
+
+        if not user or not user.verify_password(password_input.value):
+            logging.info(f"Authentication failed for: {username_input.value}")
+            ui.notify("Wrong username or password", color="negative")
+            return None
+
+        app.storage.user.update(
+            {"username": username_input.value, "authenticated": True}
+        )
+        ui.navigate.to(app.storage.user.get("referrer_path", "/"))
+
+    username_input.on("keydown.enter", try_login)
+    password_input.on("keydown.enter", try_login)
+    ui.button("Log in", on_click=try_login)
+
+    return None
+
+
+@ui.page("/dashboard")
+def dashboard():
+    ui.label("This is the dashboard!")
+
+
+class AuthenticationMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        if not app.storage.user.get("authenticated", False):
+            if request.url.path not in UNRESTRICTED_PAGE_ROUTES:
+                app.storage.user["referrer_path"] = request.url.path
+                return RedirectResponse("/login")
+        return await call_next(request)
+
+
+app.add_middleware(AuthenticationMiddleware)
 
 
 def entry() -> None:
-    import uvicorn
-
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    app.add_middleware(AuthenticationMiddleware)
+    app.on_startup(setup)
+    app.on_shutdown(shutdown)
+    ui.run(title="Sentinel", storage_secret=secrets.token_urlsafe(nbytes=256))
