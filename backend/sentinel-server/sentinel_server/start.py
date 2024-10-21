@@ -1,10 +1,12 @@
 import logging
 import os
 import sys
+from typing import Annotated
 
 import platformdirs
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI, Header, HTTPException, status
 from fastapi.responses import JSONResponse
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from tortoise import Tortoise
 
 import sentinel_server.auth
@@ -12,6 +14,7 @@ import sentinel_server.config
 from sentinel_server.plugins import discover_plugins, load_plugins
 
 app = FastAPI()
+security = HTTPBasic()
 
 
 @app.on_event("startup")
@@ -59,9 +62,25 @@ async def shutdown_event():
     logging.info("Sentinel shutdown")
 
 
-@app.get("/")
-async def api_root():
-    return JSONResponse(content={"message": "Hello world!"})
+@app.post("/login")
+async def login(credentials: Annotated[HTTPBasicCredentials, Depends(security)]):
+    logging.info(f"Received login credentials for: {credentials.username}")
+
+    user: sentinel_server.auth.User = await sentinel_server.auth.User.get_or_none(
+        username=credentials.username
+    )
+
+    if not user or not user.verify_password(credentials.password):
+        logging.info(f"Authentication failed for: {credentials.username}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+
+    logging.info(f"Authentication succeeded for: {credentials.username}")
+    jwt_token = sentinel_server.auth.create_jwt_access_token(user.username)
+    return {"access_token": jwt_token, "token_type": "bearer"}
 
 
 def entry() -> None:

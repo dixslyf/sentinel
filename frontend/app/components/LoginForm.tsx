@@ -1,34 +1,36 @@
 "use client";
-import { loginDet } from "../interfaces/general";
+import { UserCredentials } from "../interfaces/general";
 import { useRouter } from "next/navigation";
 
 const LoginForm = () => {
     const router = useRouter();
 
-    async function validateLogin(formdata: FormData) {
-        const det: loginDet = {
-            uname: formdata.get("usr") as string,
-            pwd: formdata.get("pwd") as string,
+    async function validateLogin(formData: FormData) {
+        const creds: UserCredentials = {
+            username: formData.get("username") as string,
+            password: formData.get("password") as string,
         };
 
-        // The code below is to send data to an external url.
-        // To use, uncomment the codes below and replace the ''
-        // with the url.
-        // No error code for now since there is no status code yet.
-        // const res = await fetch('', {
-        //     method: 'POST',
-        //     headers: { 'Content-Type': 'application/json' },
-        //     body: JSON.stringify(det),
-        // });
+        const res = await fetch("/backend/login", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization:
+                    // Encode into base64.
+                    "Basic " + btoa(`${creds.username}:${creds.password}`),
+            },
+        });
 
-        // if (res.ok){
-        //     router.push("/dashboard");
-        // }
+        if (res.ok) {
+            const data = await res.json();
 
-        // This is for testing purposes
-        // comment this section if using the top code block.
-        if (det) {
-            router.push("/dashboard");
+            // Store the JWT token in local storage for future API calls to the backend.
+            localStorage.setItem("access_token", data.access_token);
+
+            router.push("/dashboard"); // Redirect to the dashboard after successful login.
+        } else {
+            // TODO: properly show an error message that authentication failed
+            console.error("Authentication failed: ", res.statusText);
         }
     }
 
@@ -40,25 +42,25 @@ const LoginForm = () => {
                 </span>
             </div>
             <div className="uname flex flex-col text-left">
-                <label className="text-sm text-gray-500" htmlFor="usr">
+                <label className="text-sm text-gray-500" htmlFor="username">
                     Username
                 </label>
                 <input
                     className="border-b-2 focus:outline-none"
                     type="text"
-                    name="usr"
+                    name="username"
                     placeholder="Admin"
                     required
                 />
             </div>
             <div className="password flex flex-col text-left">
-                <label className="text-sm text-gray-500" htmlFor="pwd">
+                <label className="text-sm text-gray-500" htmlFor="password">
                     Password
                 </label>
                 <input
                     className="border-b-2 focus:outline-none"
                     type="password"
-                    name="pwd"
+                    name="password"
                     placeholder="************"
                     required
                 />

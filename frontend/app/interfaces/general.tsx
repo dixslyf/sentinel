@@ -1,4 +1,4 @@
-export interface loginDet {
-    uname: string;
-    pwd: string;
+export interface UserCredentials {
+    username: string;
+    password: string;
 }
