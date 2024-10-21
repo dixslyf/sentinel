@@ -10,7 +10,7 @@ from tortoise.models import Model
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_USERNAME: str = "root"
+DEFAULT_USERNAME: str = "admin"
 DEFAULT_PASSWORD: str = "password"
 
 
