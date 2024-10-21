@@ -16,5 +16,6 @@
 
   pre-commit.hooks = {
     eslint.enable = true;
+    prettier.enable = true;
   };
 }
