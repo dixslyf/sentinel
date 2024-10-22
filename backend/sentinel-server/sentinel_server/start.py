@@ -98,6 +98,7 @@ def login() -> Optional[RedirectResponse]:
             ui.notify("Wrong username or password", color="negative")
             return None
 
+        logging.info(f"Authentication succeeded for: {username_input.value}")
         app.storage.user.update(
             {"username": username_input.value, "authenticated": True}
         )
