@@ -109,7 +109,10 @@ def dashboard():
 class AuthenticationMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         if not app.storage.user.get("authenticated", False):
-            if request.url.path not in UNRESTRICTED_PAGE_ROUTES:
+            if (
+                not request.url.path.startswith("/_nicegui")
+                and request.url.path not in UNRESTRICTED_PAGE_ROUTES
+            ):
                 app.storage.user["referrer_path"] = request.url.path
                 return RedirectResponse("/login")
         return await call_next(request)
