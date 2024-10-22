@@ -113,7 +113,8 @@ def login() -> Optional[RedirectResponse]:
 
 
 def pages_shared():
-    with ui.left_drawer(fixed=False).classes("shadow-2xl") as left_drawer:
+    # TODO: How to make the drawer retain its open/closed state across pages?
+    with ui.left_drawer(fixed=False, value=False).classes("shadow-2xl") as left_drawer:
         ui.button("Dashboard", on_click=lambda: ui.navigate.to("/dashboard"))
         ui.button("Cameras", on_click=lambda: ui.navigate.to("/cameras"))
         ui.button("Devices", on_click=lambda: ui.navigate.to("/devices"))
