@@ -85,6 +85,7 @@ def login() -> Optional[RedirectResponse]:
         password_input = ui.input(
             "Password", password=True, password_toggle_button=True
         )
+        login_button = ui.button("Log in")
 
     async def try_login() -> None:
         logging.info(f"Checking login credentials for: {username_input.value}")
@@ -106,7 +107,7 @@ def login() -> Optional[RedirectResponse]:
 
     username_input.on("keydown.enter", try_login)
     password_input.on("keydown.enter", try_login)
-    ui.button("Log in", on_click=try_login)
+    login_button.on_click(try_login)
 
     return None
 
