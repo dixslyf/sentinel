@@ -1,9 +1,17 @@
 from collections.abc import Iterable
 from enum import Enum, auto
+from typing import Self
 
 import ultralytics
+
 from sentinel_core.alert import Subscriber
-from sentinel_core.plugins import Plugin
+from sentinel_core.plugins import (
+    Choice,
+    ComponentArgDescriptor,
+    ComponentDescriptor,
+    ComponentKind,
+    Plugin,
+)
 from sentinel_core.video import Frame, VideoStream
 from sentinel_core.video.detect import (
     BoundingBox,
@@ -78,8 +86,37 @@ class UltralyticsDetector(Detector):
         return DetectionResult(frame.timestamp or -1, frame, detections)
 
 
+_ultralytics_detector_descriptor = ComponentDescriptor(
+    display_name="Ultralytics",
+    kind=ComponentKind.Detector,
+    cls=UltralyticsDetector,
+    args=[
+        ComponentArgDescriptor(
+            display_name="Model Type",
+            arg_name="model_type",
+            option_type=str,
+            required=True,
+            default=None,
+            choices={
+                Choice.from_string("YOLO"),
+                Choice.from_string("SAM"),
+                Choice.from_string("FastSAM"),
+                Choice.from_string("YOLO_NAS"),
+                Choice.from_string("RT_DETR"),
+                Choice.from_string("YOLO_WORLD"),
+            },
+        ),
+        ComponentArgDescriptor(
+            display_name="Model Path",
+            arg_name="model_path",
+            option_type=str,
+            required=True,
+            default=None,
+            # TODO: add a validator
+        ),
+    ],
+)
+
+
 class UltralyticsPlugin(Plugin):
-    name = "Ultralytics"
-    video_stream_classes: Iterable[type[VideoStream]] = set()
-    detector_classes: Iterable[type[Detector]] = {UltralyticsDetector}
-    subscriber_classes: Iterable[type[Subscriber]] = set()
+    components = [_ultralytics_detector_descriptor]
