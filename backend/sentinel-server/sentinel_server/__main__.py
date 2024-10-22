@@ -1,4 +1,4 @@
-import sentinel_server.cli as cli
+import sentinel_server.start
 
-if __name__ == "__main__":
-    cli.entry()
+if __name__ in {"__main__", "__mp_main__"}:
+    sentinel_server.start.entry()
