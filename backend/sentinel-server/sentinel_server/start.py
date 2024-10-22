@@ -13,9 +13,11 @@ from tortoise import Tortoise
 
 import sentinel_server.auth
 import sentinel_server.config
-from sentinel_server.plugins import discover_plugins, load_plugins
+from sentinel_server.plugins import ComponentKind, PluginManager
 
 UNRESTRICTED_PAGE_ROUTES: set[str] = {"/", "/login"}
+
+plugin_manager: PluginManager
 
 
 async def setup():
@@ -55,7 +57,10 @@ async def setup():
     await sentinel_server.auth.ensure_default_user()
 
     # Discover and load plugins.
-    plugins = load_plugins(discover_plugins(), config.plugin_whitelist)
+    global plugin_manager
+    plugin_manager = PluginManager(config.plugin_whitelist)
+    await run.io_bound(plugin_manager.discover_plugins)
+    await run.io_bound(plugin_manager.load_plugins)
 
     logging.info("Sentinel started")
 
