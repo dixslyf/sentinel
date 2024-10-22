@@ -4,8 +4,14 @@ from typing import Optional, Self
 
 import cv2
 import numpy as np
+
 from sentinel_core.alert import Subscriber
-from sentinel_core.plugins import Plugin
+from sentinel_core.plugins import (
+    ComponentArgDescriptor,
+    ComponentDescriptor,
+    ComponentKind,
+    Plugin,
+)
 from sentinel_core.video import Frame, VideoStream
 from sentinel_core.video.detect import Detector
 
@@ -15,13 +21,8 @@ class OpenCVVideoStream(VideoStream):
     An OpenCV raw video stream.
     """
 
-    def __init__(self, capture: cv2.VideoCapture):
-        if not capture.isOpened():
-            raise ValueError(
-                "OpenCV video capture has not been or failed to initialise."
-            )
-
-        self._capture: cv2.VideoCapture = capture
+    def __init__(self, source: int | str):
+        self._capture: cv2.VideoCapture = cv2.VideoCapture(source)
 
     async def next_frame(self) -> Optional[Frame]:
         has_next: bool
@@ -60,8 +61,22 @@ class OpenCVVideoStream(VideoStream):
         await self.destroy()
 
 
+_opencv_video_stream_descriptor = ComponentDescriptor(
+    display_name="OpenCV",
+    kind=ComponentKind.VideoStream,
+    cls=OpenCVVideoStream,
+    args=[
+        ComponentArgDescriptor(
+            display_name="Source",
+            arg_name="source",
+            option_type=str,
+            required=True,
+            default=None,
+            # TODO: add transform
+        ),
+    ],
+)
+
+
 class OpenCVPlugin(Plugin):
-    name = "OpenCV"
-    video_stream_classes: Iterable[type[VideoStream]] = {OpenCVVideoStream}
-    detector_classes: Iterable[type[Detector]] = set()
-    subscriber_classes: Iterable[type[Subscriber]] = set()
+    components = [_opencv_video_stream_descriptor]
