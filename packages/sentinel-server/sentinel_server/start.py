@@ -76,17 +76,41 @@ def index():
 
 
 @ui.page("/login")
-def login() -> Optional[RedirectResponse]:
+# main login page
+def loginPage() -> Optional[RedirectResponse]:
+    # This line is require to remove the nicegui default padding
+    ui.add_head_html('<style>.nicegui-content { padding: 0 !important; }</style>')
+
     if app.storage.user.get("authenticated", False):
         return RedirectResponse("/dashboard")
 
-    with ui.card().classes("absolute-center"):
-        username_input = ui.input("Username")
-        password_input = ui.input(
-            "Password", password=True, password_toggle_button=True
-        )
-        login_button = ui.button("Log in")
+    with ui.element('div').classes('w-screen h-screen flex m-0'):
+        # left side of the page 
+        with ui.element('div').classes('w-1/2 border-2 flex justify-center'):
+            ui.label('Page Icon Here').classes('m-auto text-2xl')
+        
+        # right side 
+        with ui.element('div').classes('w-1/2 flex justify-start text-center m-auto'):
+            loginForm()
 
+    return None
+
+# login form component
+def loginForm() -> Optional[RedirectResponse]:
+    if app.storage.user.get("authenticated", False):
+        return RedirectResponse("/dashboard")
+
+    # main styling for login form 
+    with ui.element('div').classes('space-y-4 w-2/5 ml-8'):
+        ui.label("Begin Your Journey With Sentinel").classes('italic font-semibold text-xl text-left font-serif')
+
+        username_input = ui.input(label='Username')
+        password_input = ui.input(label='Password', password=True, password_toggle_button=True)
+
+        with ui.element('div').classes('flex justify-end'):
+            login_button = ui.button('Log In').classes('text-lg text-white bg-black rounded-xl py-1 px-3')
+
+    # validation for login data
     async def try_login() -> None:
         logging.info(f"Checking login credentials for: {username_input.value}")
 
@@ -121,10 +145,18 @@ def pages_shared():
         ui.button("Alerts", on_click=lambda: ui.navigate.to("/alerts"))
         ui.button("Settings", on_click=lambda: ui.navigate.to("/settings"))
 
+
+        ui.button("Logout", on_click=logout_user)
+
     with ui.header():
         ui.button(on_click=lambda: left_drawer.toggle(), icon="menu")
         ui.label("Sentinel")
 
+
+def logout_user() -> None:
+    app.storage.user.update({"authenticated": False})
+    logging.info("User logged out")
+    ui.navigate.to("/login")
 
 @ui.page("/dashboard")
 def dashboard():
@@ -258,7 +290,7 @@ def entry() -> None:
     app.add_middleware(AuthenticationMiddleware)
     app.on_startup(setup)
     app.on_shutdown(shutdown)
-    ui.run(title="Sentinel", storage_secret=secrets.token_urlsafe(nbytes=256))
+    ui.run(title="Sentinel", storage_secret=secrets.token_urlsafe(nbytes=256), reload=True)
 
 
 if __name__ in {"__main__", "__mp_main__"}:
