@@ -279,6 +279,7 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
         if not app.storage.user.get("authenticated", False):
             if (
                 not request.url.path.startswith("/_nicegui")
+                and not request.url.path.startswith("/_static")
                 and request.url.path not in UNRESTRICTED_PAGE_ROUTES
             ):
                 app.storage.user["referrer_path"] = request.url.path
