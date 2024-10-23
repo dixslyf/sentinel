@@ -75,9 +75,9 @@ def index():
     return RedirectResponse("/login")
 
 
+# Main login page.
 @ui.page("/login")
-# main login page
-def loginPage() -> Optional[RedirectResponse]:
+def login_page() -> Optional[RedirectResponse]:
     # This line is require to remove the nicegui default padding
     ui.add_head_html("<style>.nicegui-content { padding: 0 !important; }</style>")
 
@@ -91,13 +91,13 @@ def loginPage() -> Optional[RedirectResponse]:
 
         # right side
         with ui.element("div").classes("w-1/2 flex justify-start text-center m-auto"):
-            loginForm()
+            login_form()
 
     return None
 
 
-# login form component
-def loginForm() -> Optional[RedirectResponse]:
+# Login form component.
+def login_form() -> Optional[RedirectResponse]:
     if app.storage.user.get("authenticated", False):
         return RedirectResponse("/dashboard")
 
@@ -166,13 +166,13 @@ def logout_user() -> None:
 
 
 @ui.page("/dashboard")
-def dashboard():
+def dashboard_page():
     ui.label("dashboard")
     pages_shared()
 
 
 @ui.page("/cameras")
-def cameras() -> None:
+def cameras_page() -> None:
     pages_shared()
 
     ui.label("Cameras")
@@ -264,13 +264,13 @@ def cameras() -> None:
 
 
 @ui.page("/devices")
-def devices():
+def devices_page():
     ui.label("devices")
     pages_shared()
 
 
 @ui.page("/alerts")
-def alerts():
+def alerts_page():
     ui.label("alerts")
     pages_shared()
 
