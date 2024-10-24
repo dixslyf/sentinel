@@ -65,8 +65,7 @@ async def setup():
 
     # Discover and load plugins.
     sentinel_server.globals.init_plugin_manager(config.plugin_whitelist)
-    await run.io_bound(sentinel_server.globals.plugin_manager.discover_plugins)
-    await run.io_bound(sentinel_server.globals.plugin_manager.load_plugins)
+    await run.io_bound(sentinel_server.globals.plugin_manager.init_plugins)
 
     logging.info("Sentinel started")
 
