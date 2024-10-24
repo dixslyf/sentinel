@@ -1,6 +1,20 @@
 import cv2
 from aioreactive import AsyncObservable, AsyncObserver, AsyncSubject
 from sentinel_core.video import Frame, VideoStream, VideoStreamNoDataException
+from tortoise import fields
+from tortoise.models import Model
+
+
+class VideoSource(Model):
+    """
+    Represents a video source with an associated video stream and detector.
+    """
+
+    id = fields.IntField(pk=True)
+    name = fields.CharField(max_length=255, unique=True)
+    plugin_name = fields.CharField(max_length=255)
+    component_name = fields.CharField(max_length=255)
+    config = fields.JSONField()
 
 
 class ReactiveVideoStream(AsyncObservable[Frame]):

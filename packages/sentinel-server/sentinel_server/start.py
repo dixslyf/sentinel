@@ -56,7 +56,8 @@ async def setup():
 
     # Initialise database.
     await Tortoise.init(
-        db_url=config.db_url, modules={"models": ["sentinel_server.auth"]}
+        db_url=config.db_url,
+        modules={"models": ["sentinel_server.auth", "sentinel_server.video"]},
     )
     await Tortoise.generate_schemas(safe=True)
 
