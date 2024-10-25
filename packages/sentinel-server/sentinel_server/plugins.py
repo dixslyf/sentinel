@@ -1,6 +1,6 @@
 import importlib.metadata
 import logging
-from collections.abc import Collection
+from collections.abc import Collection, Iterable
 from dataclasses import dataclass
 from importlib.metadata import EntryPoint, EntryPoints
 from typing import Optional
@@ -19,10 +19,10 @@ class PluginDescriptor:
 
 class PluginManager:
     def __init__(self, whitelist: Collection[str]):
-        self._whitelist = set(whitelist)
+        self._whitelist: set[str] = set(whitelist)
         self._plugin_descriptors: Optional[set[PluginDescriptor]] = None
 
-    def init_plugins(self):
+    def init_plugins(self) -> None:
         entry_points = self._discover_plugins()
         whitelisted_entry_points = {
             entry_point
@@ -30,10 +30,11 @@ class PluginManager:
             if entry_point.name in self._whitelist
         }
 
-        plugins = self._load_plugins(whitelisted_entry_points)
         self._plugin_descriptors = {
             PluginDescriptor(entry_point.name, entry_point, plugin)
-            for entry_point, plugin in zip(whitelisted_entry_points, plugins)
+            for entry_point, plugin in self._load_plugins(
+                whitelisted_entry_points
+            ).items()
         }
 
     def _discover_plugins(self) -> EntryPoints:
@@ -43,8 +44,12 @@ class PluginManager:
         )
         return entry_points
 
-    def _load_plugins(self, entry_points: EntryPoints) -> set[Plugin]:
-        loaded_plugins = {entry_point.load() for entry_point in entry_points}
+    def _load_plugins(
+        self, entry_points: Iterable[EntryPoint]
+    ) -> dict[EntryPoint, Plugin]:
+        loaded_plugins = {
+            entry_point: entry_point.load() for entry_point in entry_points
+        }
 
         logger.info(f"Plugin whitelist: {list(self._whitelist)}")
         logger.info(
