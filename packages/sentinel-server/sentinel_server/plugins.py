@@ -59,5 +59,8 @@ class PluginManager:
         return loaded_plugins
 
     @property
-    def plugin_descriptors(self) -> Optional[set[PluginDescriptor]]:
+    def plugin_descriptors(self) -> set[PluginDescriptor]:
+        if self._plugin_descriptors is None:
+            raise ValueError("Plugins have not been initialised.")
+
         return self._plugin_descriptors
