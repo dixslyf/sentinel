@@ -6,7 +6,7 @@ from sentinel_core.plugins import ComponentDescriptor, ComponentKind
 
 import sentinel_server.globals
 import sentinel_server.ui
-from sentinel_server.video import VideoSource
+from sentinel_server.models import VideoSource
 
 logger = logging.getLogger(__name__)
 

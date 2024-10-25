@@ -73,11 +73,13 @@ def login_form() -> Optional[RedirectResponse]:
     async def try_login() -> None:
         logging.info(f"Checking login credentials for: {username_input.value}")
 
-        user: sentinel_server.auth.User = await sentinel_server.auth.User.get_or_none(
-            username=username_input.value
+        user: sentinel_server.models.User = (
+            await sentinel_server.models.User.get_or_none(username=username_input.value)
         )
 
-        if not user or not user.verify_password(password_input.value):
+        if not user or not sentinel_server.auth.verify_password(
+            password_input.value, user.hashed_password
+        ):
             logging.info(f"Authentication failed for: {username_input.value}")
             ui.notify("Wrong username or password", color="negative")
             return None

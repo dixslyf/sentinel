@@ -2,8 +2,8 @@ import logging
 
 import bcrypt
 import tortoise
-from tortoise import fields
-from tortoise.models import Model
+
+from sentinel_server.models import User
 
 logger = logging.getLogger(__name__)
 
@@ -11,28 +11,20 @@ DEFAULT_USERNAME: str = "admin"
 DEFAULT_PASSWORD: str = "password"
 
 
-class User(Model):
+def verify_password(password: str, hashed_password_actual: str) -> bool:
     """
-    Represents a user with an ID, username and hashed password.
+    Verifies that the given password matches the user's password.
+
+    Args:
+        password (str): The password to verify
+        hashed_password_actual (str): The actual password, hashed.
+
+    Returns:
+        bool: True if the password matches; otherwise, False
     """
-
-    id = fields.IntField(pk=True)
-    username = fields.CharField(max_length=255, unique=True)
-    hashed_password = fields.CharField(max_length=255)
-
-    def verify_password(self, password: str) -> bool:
-        """
-        Verifies that the given password matches the user's password.
-
-        Args:
-            password (str): The password to verify
-
-        Returns:
-            bool: True if the password matches; otherwise, False
-        """
-        return bcrypt.checkpw(
-            password.encode("utf-8"), self.hashed_password.encode("utf-8")
-        )
+    return bcrypt.checkpw(
+        password.encode("utf-8"), hashed_password_actual.encode("utf-8")
+    )
 
 
 def hash_password(password: str) -> str:
