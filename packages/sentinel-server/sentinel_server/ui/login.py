@@ -73,12 +73,12 @@ def login_form() -> Optional[RedirectResponse]:
     async def try_login() -> None:
         logging.info(f"Checking login credentials for: {username_input.value}")
 
-        user: sentinel_server.models.User = (
+        db_user: sentinel_server.models.User = (
             await sentinel_server.models.User.get_or_none(username=username_input.value)
         )
 
-        if not user or not sentinel_server.auth.verify_password(
-            password_input.value, user.hashed_password
+        if not db_user or not sentinel_server.auth.verify_password(
+            password_input.value, db_user.hashed_password
         ):
             logging.info(f"Authentication failed for: {username_input.value}")
             ui.notify("Wrong username or password", color="negative")
@@ -86,7 +86,11 @@ def login_form() -> Optional[RedirectResponse]:
 
         logging.info(f"Authentication succeeded for: {username_input.value}")
         app.storage.user.update(
-            {"username": username_input.value, "authenticated": True}
+            {
+                "user_id": db_user.id,
+                "username": username_input.value,
+                "authenticated": True,
+            }
         )
         ui.navigate.to(app.storage.user.get("referrer_path", "/"))
 

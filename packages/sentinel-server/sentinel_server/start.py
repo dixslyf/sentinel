@@ -62,7 +62,7 @@ async def setup():
     await Tortoise.generate_schemas(safe=True)
 
     # Create the default user if it does not exist.
-    await sentinel_server.auth.ensure_default_user()
+    await sentinel_server.auth.ensure_one_user()
 
     # Discover and load plugins.
     sentinel_server.globals.init_plugin_manager(config.plugin_whitelist)

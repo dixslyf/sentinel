@@ -57,24 +57,40 @@ async def create_user(username: str, password: str) -> User:
     return user
 
 
-async def ensure_default_user() -> User:
+async def ensure_one_user() -> None:
     """
-    Ensures that the default user exists in the database.
-    If the default user does not exist, it is created and saved into the database.
+    Ensures that at least one user exists in the database.
+    If there are no users, a default user is created and saved into the database.
 
     The default username is `DEFAULT_USERNAME` while the default password
     is `DEFAULT_PASSWORD`.
-
-    Returns:
-        User: The existing or newly created default user
     """
-    logging.info("Checking if default user exists")
-    try:
-        # Check if a user with the default username already exists.
-        user = await User.get(username=DEFAULT_USERNAME)
-        logging.info("Default user already exists")
-    except tortoise.exceptions.DoesNotExist:
-        logging.info("Creating default user as it does not exist")
-        user = await create_user(DEFAULT_USERNAME, DEFAULT_PASSWORD)
-        logging.info("Created default user")
-    return user
+    logging.info("Checking if there is at least one user")
+
+    if await User.exists():
+        logging.info("At least one user already exists")
+        return
+
+    logging.info("Creating default user as there are no users")
+    await create_user(DEFAULT_USERNAME, DEFAULT_PASSWORD)
+    logging.info("Created default user")
+
+
+async def update_username(id: int, new_username: str) -> None:
+    """
+    Updates the username for the given user ID.
+    """
+    user = await User.get(id=id)
+    user.username = new_username
+    await user.save()
+    logger.info(f'Updated username for user id `{id}` to "{new_username}"')
+
+
+async def update_password(id: int, password: str) -> None:
+    """
+    Updates the password for the given user ID.
+    """
+    user = await User.get(id=id)
+    user.hashed_password = hash_password(password)
+    await user.save()
+    logger.info(f"Updated password for user id `{id}`")
