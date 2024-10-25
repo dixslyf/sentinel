@@ -102,25 +102,26 @@ class AddCameraDialog:
         # inputs when they complete the form.
         self.vidstream_inputs: dict[str, nicegui.elements.input.Input] = {}
 
-        with self.dialog, ui.card(), ui.grid(columns=2):
+        with self.dialog, ui.card():
+            ui.label("Add Camera")
+
             # Name of the video source.
-            self.name_label = ui.label("Name")
-            self.name_input = ui.input()
+            self.name_input = ui.input(label="Name")
 
             # Selection box for the video stream component.
-            self.plugin_label = ui.label("Video stream type:")
-            self.vidstream_select = ui.select({})
+            self.vidstream_select = ui.select({}, label="Video stream type")
 
             # Card section containing inputs for configuration specific
             # to the video stream component and plugin.
-            self.vidstream_section = ui.card_section().classes("col-span-2")
+            self.vidstream_section = ui.element("div")
 
             # Update the form to show configuration inputs for
             # the currently selected video stream component.
             self.vidstream_select.on_value_change(self._update_vidstream_config_inputs)
 
-            ui.button("Close", on_click=self.close)
-            ui.button("Finish", on_click=self._on_finish)
+            with ui.grid(columns=2):
+                ui.button("Close", on_click=self.close)
+                ui.button("Finish", on_click=self._on_finish)
 
     def open(self):
         """Opens the dialog."""
@@ -154,10 +155,9 @@ class AddCameraDialog:
         self.vidstream_section.clear()
 
         comp = self.vidstream_select.value
-        with self.vidstream_section, ui.grid(columns=2):
+        with self.vidstream_section:
             for arg in comp.args:
-                ui.label(arg.display_name)
-                input = ui.input()
+                input = ui.input(label=arg.display_name)
                 self.vidstream_inputs[arg.arg_name] = input
 
     async def _on_finish(self) -> None:
