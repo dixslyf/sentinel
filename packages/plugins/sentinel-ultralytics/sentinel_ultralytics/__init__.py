@@ -3,7 +3,6 @@ from enum import Enum, auto
 from typing import Self
 
 import ultralytics
-
 from sentinel_core.alert import Subscriber
 from sentinel_core.plugins import (
     Choice,
@@ -90,7 +89,7 @@ _ultralytics_detector_descriptor = ComponentDescriptor(
     display_name="Ultralytics",
     kind=ComponentKind.Detector,
     cls=UltralyticsDetector,
-    args=[
+    args=(
         ComponentArgDescriptor(
             display_name="Model Type",
             arg_name="model_type",
@@ -114,7 +113,7 @@ _ultralytics_detector_descriptor = ComponentDescriptor(
             default=None,
             # TODO: add a validator
         ),
-    ],
+    ),
 )
 
 

@@ -4,7 +4,6 @@ from typing import Optional, Self
 
 import cv2
 import numpy as np
-
 from sentinel_core.alert import Subscriber
 from sentinel_core.plugins import (
     ComponentArgDescriptor,
@@ -65,7 +64,7 @@ _opencv_video_stream_descriptor = ComponentDescriptor(
     display_name="OpenCV",
     kind=ComponentKind.VideoStream,
     cls=OpenCVVideoStream,
-    args=[
+    args=(
         ComponentArgDescriptor(
             display_name="Source",
             arg_name="source",
@@ -74,7 +73,7 @@ _opencv_video_stream_descriptor = ComponentDescriptor(
             default=None,
             # TODO: add transform
         ),
-    ],
+    ),
 )
 
 

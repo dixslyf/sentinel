@@ -19,7 +19,7 @@ class Choice:
         return cls(display_name=value, value=value)
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen=True)
 class ComponentArgDescriptor[T]:
     display_name: str
     arg_name: str
@@ -37,12 +37,12 @@ class ComponentKind(Enum):
     Subscriber = 2
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen=True)
 class ComponentDescriptor[T: VideoStream | Detector | Subscriber]:
     display_name: str
     kind: ComponentKind
     cls: type[T]
-    args: Sequence[ComponentArgDescriptor]
+    args: tuple[ComponentArgDescriptor]
 
 
 class Plugin(Protocol):
