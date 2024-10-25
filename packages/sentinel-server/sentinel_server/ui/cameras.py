@@ -2,11 +2,9 @@ import logging
 
 import nicegui
 from nicegui import APIRouter, ui
-from sentinel_core.plugins import ComponentDescriptor, ComponentKind
 
 import sentinel_server.globals
 import sentinel_server.ui
-from sentinel_server.models import VideoSource
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +45,10 @@ class CameraTable:
         """
         self.table.rows.clear()
         self.table.update()
-        async for vid_src in VideoSource.all():
+
+        vid_src_manager = sentinel_server.globals.video_source_manager
+
+        for _, vid_src in vid_src_manager.video_sources().items():
             self.table.add_row(
                 {
                     "id": vid_src.id,
@@ -56,6 +57,8 @@ class CameraTable:
                     "status": "Offline",  # TODO: query global video source manager about status
                 }
             )
+
+        logger.debug("Refreshed camera table")
 
 
 class AddCameraDialog:
@@ -80,14 +83,6 @@ class AddCameraDialog:
 
         self.dialog = ui.dialog()
 
-        # Dictionary that maps a video stream component name to the corresponding
-        # component object and plugin name.
-        # This is used for two things:
-        #   1. Displaying the names of available video stream components for the user to select.
-        #   2. Creating the video stream (from the component descriptor) and saving the video source
-        #      information to the database when the user completes the input form.
-        self.vidstream_comps: dict[str, tuple[ComponentDescriptor, str]] = {}
-
         # Dictionary that maps each argument display name of the currently selected
         # video stream component to a NiceGUI input box. Used for retrieving the user's
         # inputs when they complete the form.
@@ -100,7 +95,7 @@ class AddCameraDialog:
 
             # Selection box for the video stream component.
             self.plugin_label = ui.label("Video stream type:")
-            self.vidstream_select = ui.select([])
+            self.vidstream_select = ui.select({})
 
             # Card section containing inputs for configuration specific
             # to the video stream component and plugin.
@@ -115,29 +110,25 @@ class AddCameraDialog:
 
     def open(self):
         """Opens the dialog."""
-        self._update_vidstream_comps()
+        self._update_vidstream_select_options()
         self.dialog.open()
 
     def close(self):
         """Closes the dialog."""
         self.dialog.close()
 
-    def _update_vidstream_comps(self):
-        """Updates the dictionary of video stream components available."""
-        self.vidstream_comps = {
-            component.display_name: (component, plugin_desc.name)
-            for plugin_desc in sentinel_server.globals.plugin_manager.plugin_descriptors
-            for component in plugin_desc.plugin.components
-            if component.kind == ComponentKind.VideoStream
-        }
+    def _update_vidstream_select_options(self) -> None:
+        """Updates the options for the dropdown selection box for the video stream component."""
+        vid_src_manager = sentinel_server.globals.video_source_manager
+        available_vidstream_comps = vid_src_manager.available_vidstream_components()
 
         self.vidstream_select.set_options(
-            [comp_name for comp_name in self.vidstream_comps.keys()]
+            {comp: comp.display_name for comp in available_vidstream_comps}
         )
 
     def _update_vidstream_config_inputs(
         self, vidstream_select: nicegui.elements.select.Select
-    ):
+    ) -> None:
         """
         Updates the user interface by dynamically adding input fields
         for the currently selected video stream component's configuration.
@@ -147,48 +138,36 @@ class AddCameraDialog:
         """
         self.vidstream_inputs = {}
         self.vidstream_section.clear()
+
+        comp = self.vidstream_select.value
         with self.vidstream_section, ui.grid(columns=2):
-            comp, _ = self.vidstream_comps[vidstream_select.value]
             for arg in comp.args:
                 ui.label(arg.display_name)
                 input = ui.input()
                 self.vidstream_inputs[arg.arg_name] = input
 
-    async def _on_finish(self):
+    async def _on_finish(self) -> None:
         """
         Completes the camera addition process by creating a new video source in the database,
         refreshing the table and closing the dialog.
         """
-        # Kwargs for creating the video stream.
+        # Keyword args for creating the video stream.
         vidstream_kwargs = {
             arg_name: input.value for arg_name, input in self.vidstream_inputs.items()
         }
 
-        comp, plugin_name = self.vidstream_comps[self.vidstream_select.value]
-
-        # Get the video stream class.
-        vidstream_cls = comp.cls
+        comp = self.vidstream_select.value
 
         try:
-            # Create the video stream.
-            # TODO: save the video stream in some global video stream manager
-            vidstream = vidstream_cls(**vidstream_kwargs)
-            logger.info(vidstream)
-
-            # Create an entry in the database.
-            vid_src = VideoSource(
-                name=self.name_input.value,
-                plugin_name=plugin_name,
-                component_name=self.vidstream_select.value,
-                config=vidstream_kwargs,
+            vid_src_manager = sentinel_server.globals.video_source_manager
+            await vid_src_manager.add_video_source(
+                self.name_input.value, comp, vidstream_kwargs
             )
-            await vid_src.save()
-            logger.info(f'Saved "{vid_src.name}" video source to database')
-
-            await self.camera_table.refresh()
-            self.close()
         except Exception as ex:
             ui.notify(f"An error occurred: {ex}", color="negative")
+
+        await self.camera_table.refresh()
+        self.close()
 
 
 @router.page("/cameras")
@@ -198,9 +177,12 @@ async def cameras_page() -> None:
     ui.label("Cameras")
 
     table = CameraTable()
-    await table.refresh()
 
     dialog = AddCameraDialog(table)
 
     with ui.row():
         ui.button("Add", on_click=dialog.open)
+
+    # Wait for the page to load before refreshing the table.
+    await ui.context.client.connected()
+    await table.refresh()

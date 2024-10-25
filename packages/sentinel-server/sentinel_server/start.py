@@ -68,6 +68,9 @@ async def setup():
     sentinel_server.globals.init_plugin_manager(config.plugin_whitelist)
     await run.io_bound(sentinel_server.globals.plugin_manager.init_plugins)
 
+    sentinel_server.globals.init_video_source_manager()
+    await sentinel_server.globals.video_source_manager.load_video_sources_from_db()
+
     logging.info("Sentinel started")
 
 
