@@ -36,7 +36,9 @@ class CameraTable:
     ]
 
     def __init__(self) -> None:
-        self.table = ui.table(columns=CameraTable.columns, rows=[], row_key="id")
+        self.table = ui.table(columns=CameraTable.columns, rows=[], row_key="id").props(
+            "loading"
+        )
 
     async def refresh(self) -> None:
         """
@@ -45,6 +47,17 @@ class CameraTable:
         """
         self.table.rows.clear()
         self.table.update()
+
+        # Wait for:
+        # - The video source manager to be initialised
+        # - The video source manager to load video sources from the database
+        #
+        # In most user scenarios, we don't have to wait for the video source manager,
+        # but, during development, hot-reloading can cause the table to try to refresh
+        # before the video source manager has been initialised or before it has loaded
+        # the video sources.
+        await sentinel_server.globals.video_source_manager_loaded.wait()
+        await sentinel_server.globals.video_source_manager_loaded_from_db.wait()
 
         vid_src_manager = sentinel_server.globals.video_source_manager
 
@@ -58,6 +71,7 @@ class CameraTable:
                 }
             )
 
+        self.table.props("loading=false")
         logger.debug("Refreshed camera table")
 
 
