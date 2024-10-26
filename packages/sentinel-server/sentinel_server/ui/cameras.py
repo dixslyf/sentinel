@@ -1,10 +1,10 @@
 import logging
 
 import nicegui
-from nicegui import APIRouter, app, ui
-
 import sentinel_server.globals
 import sentinel_server.ui
+from nicegui import APIRouter, app, ui
+from nicegui.events import GenericEventArguments
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,8 @@ class CameraTable:
             "field": "plugin_component",
         },
         {"name": "status", "label": "Status", "field": "status"},
-        {"name": "view", "label": "View", "field": "view"},
+        {"name": "enabled", "label": "Enabled", "field": "enabled"},
+        {"name": "view", "label": "", "field": "view"},
     ]
 
     def __init__(self) -> None:
@@ -41,13 +42,35 @@ class CameraTable:
             "loading"
         )
 
+        # Enabled checkbox.
+        self.table.add_slot(
+            "body-cell-enabled",
+            '<q-td :props="props">'
+            + '<q-checkbox v-model="props.row.enabled" @update:model-value="() => $parent.$emit(\'update_enabled\', props.row)" />\n'
+            + "</q-td>",
+        )
+        self.table.on("update_enabled", self.update_enabled_handler)
+
         # Link for view.
         self.table.add_slot(
             "body-cell-view",
             '<q-td :props="props">\n'
-            "   <a :href=\"'cameras/' + props.value\">{{ props.value }}</a>"
+            + "   <a :href=\"'cameras/' + props.row.id\">View</a>"
             + "</q-td>",
         )
+
+    async def update_enabled_handler(self, msg: GenericEventArguments):
+        """
+        Handler for when the enabled checkbox for a video source is toggled.
+        """
+        id = msg.args["id"]
+        enabled = msg.args["enabled"]
+
+        vid_src_manager = sentinel_server.globals.video_source_manager
+        if enabled:
+            await vid_src_manager.enable_video_source(id)
+        else:
+            await vid_src_manager.disable_video_source(id)
 
     async def refresh(self) -> None:
         """
@@ -77,6 +100,7 @@ class CameraTable:
                     "name": vid_src.name,
                     "plugin_component": f"{vid_src.plugin_name} / {vid_src.component_name}",
                     "status": "Offline",  # TODO: query global video source manager about status
+                    "enabled": vid_src.enabled,
                     "view": vid_src.id,  # TODO: change how this looks
                 }
             )

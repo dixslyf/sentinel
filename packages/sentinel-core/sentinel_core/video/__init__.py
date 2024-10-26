@@ -18,14 +18,35 @@ class Frame:
     data: np.ndarray
 
 
-class VideoStream(Protocol):
+class AsyncVideoStream(Protocol):
     """
-    Protocol for raw video streams.
+    Protocol for asynchronous video streams.
     """
 
     async def next_frame(self) -> Optional[Frame]:
         """
         Returns the next video frame or `None` if no frame data is available.
+        """
+
+    async def clean_up(self) -> None:
+        """
+        Cleans up any resources associated with the video stream.
+        """
+
+
+class SyncVideoStream(Protocol):
+    """
+    Protocol for synchronous video streams.
+    """
+
+    def next_frame(self) -> Optional[Frame]:
+        """
+        Returns the next video frame or `None` if no frame data is available.
+        """
+
+    def clean_up(self) -> None:
+        """
+        Cleans up any resources associated with the video stream.
         """
 
 

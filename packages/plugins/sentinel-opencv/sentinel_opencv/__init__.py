@@ -1,21 +1,17 @@
-import asyncio
-from collections.abc import Iterable
-from typing import Optional, Self
+from typing import Any, Optional, Self
 
 import cv2
 import numpy as np
-from sentinel_core.alert import Subscriber
 from sentinel_core.plugins import (
     ComponentArgDescriptor,
     ComponentDescriptor,
     ComponentKind,
     Plugin,
 )
-from sentinel_core.video import Frame, VideoStream
-from sentinel_core.video.detect import Detector
+from sentinel_core.video import Frame, SyncVideoStream
 
 
-class OpenCVVideoStream(VideoStream):
+class OpenCVVideoStream(SyncVideoStream):
     """
     An OpenCV raw video stream.
     """
@@ -23,46 +19,54 @@ class OpenCVVideoStream(VideoStream):
     def __init__(self, source: int | str):
         self._capture: cv2.VideoCapture = cv2.VideoCapture(source)
 
-    async def next_frame(self) -> Optional[Frame]:
+    def next_frame(self) -> Optional[Frame]:
         has_next: bool
         data: np.ndarray
 
-        loop = asyncio.get_event_loop()
-
-        has_next = await loop.run_in_executor(None, self._capture.grab)
+        has_next = self._capture.grab()
         if not has_next:  # No frame data
             return None
 
-        _, data = await loop.run_in_executor(None, self._capture.retrieve)
+        _, data = self._capture.retrieve()
 
-        timestamp: float = await loop.run_in_executor(
-            None, self._capture.get, cv2.CAP_PROP_POS_MSEC
-        )
+        timestamp: float = self._capture.get(cv2.CAP_PROP_POS_MSEC)
 
         return Frame(timestamp, data)
 
-    async def destroy(self) -> None:
+    def clean_up(self) -> None:
         """
         Cleans up the resources associated with this OpenCV video stream.
 
         This method should be called once the stream is no longer needed.
         Alternatively, use an `async with` statement to automatically perform the clean-up.
         """
-        loop = asyncio.get_event_loop()
-        await loop.run_in_executor(None, self._capture.release)
+        self._capture.release()
 
-    # For use with `async with` statements.
-    async def __aenter__(self) -> Self:
+    # For use with `with` statements.
+    def __enter__(self) -> Self:
         return self
 
-    # For use with `async with` statements.
-    async def __aexit__(self, exc_type, exc_value, traceback) -> None:
-        await self.destroy()
+    # For use with `with` statements.
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
+        self.destroy()
+
+
+def args_transform(kwargs: dict[str, Any]) -> dict[str, Any]:
+    # Check if source can be converted into an integer.
+    # If it can, convert it.
+    source = kwargs["source"]
+    try:
+        source_int = int(source)
+        new_kwargs = kwargs.copy()
+        new_kwargs["source"] = source_int
+        return new_kwargs
+    except ValueError:
+        return kwargs
 
 
 _opencv_video_stream_descriptor = ComponentDescriptor(
     display_name="OpenCV",
-    kind=ComponentKind.VideoStream,
+    kind=ComponentKind.SyncVideoStream,
     cls=OpenCVVideoStream,
     args=(
         ComponentArgDescriptor(
@@ -74,6 +78,7 @@ _opencv_video_stream_descriptor = ComponentDescriptor(
             # TODO: add transform
         ),
     ),
+    args_transform=args_transform,
 )
 
 
