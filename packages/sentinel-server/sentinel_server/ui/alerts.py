@@ -7,5 +7,6 @@ router = APIRouter()
 
 @router.page("/alerts")
 def alerts_page():
+    sentinel_server.ui.add_global_style()
     sentinel_server.ui.pages_shared()
     ui.label("alerts")
