@@ -7,5 +7,6 @@ router = APIRouter()
 
 @router.page("/dashboard")
 def dashboard_page():
+    sentinel_server.ui.add_global_style()
     sentinel_server.ui.pages_shared()
     ui.label("dashboard")

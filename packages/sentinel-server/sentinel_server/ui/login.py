@@ -8,6 +8,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 import sentinel_server.auth
 import sentinel_server.config
+import sentinel_server.ui
 
 UNRESTRICTED_PAGE_ROUTES: set[str] = {"/", "/login"}
 
@@ -30,8 +31,7 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
 # Main login page.
 @router.page("/login")
 def login_page() -> Optional[RedirectResponse]:
-    # This line is require to remove the nicegui default padding
-    ui.add_head_html("<style>.nicegui-content { padding: 0 !important; }</style>")
+    sentinel_server.ui.add_global_style()
 
     if app.storage.user.get("authenticated", False):
         return RedirectResponse("/dashboard")
