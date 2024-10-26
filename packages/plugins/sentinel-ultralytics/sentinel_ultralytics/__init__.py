@@ -1,9 +1,6 @@
-from collections.abc import Iterable
 from enum import Enum, auto
-from typing import Self
 
 import ultralytics
-from sentinel_core.alert import Subscriber
 from sentinel_core.plugins import (
     Choice,
     ComponentArgDescriptor,
@@ -11,7 +8,7 @@ from sentinel_core.plugins import (
     ComponentKind,
     Plugin,
 )
-from sentinel_core.video import Frame, VideoStream
+from sentinel_core.video import Frame
 from sentinel_core.video.detect import (
     BoundingBox,
     Detection,
