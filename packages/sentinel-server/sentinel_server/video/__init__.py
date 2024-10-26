@@ -6,7 +6,7 @@ from enum import Enum
 from typing import Any, Optional, Self
 
 import sentinel_server.tasks
-from aioreactive import AsyncObservable, AsyncObserver, AsyncSubject
+from aioreactive import AsyncDisposable, AsyncObservable, AsyncObserver, AsyncSubject
 from sentinel_core.plugins import ComponentDescriptor, ComponentKind
 from sentinel_core.video import (
     AsyncVideoStream,
@@ -86,6 +86,11 @@ class VideoSource:
 
     plugin_name: str
     component_name: str
+
+    subscribers: dict[AsyncObserver, Optional[AsyncDisposable]] = dataclasses.field(
+        default_factory=lambda: {}
+    )
+
     plugin_desc: Optional[PluginDescriptor] = None
     component: Optional[ComponentDescriptor] = None
 
@@ -213,6 +218,7 @@ class VideoSourceManager:
             or component.kind == ComponentKind.SyncVideoStream
         ]
 
+    @property
     def video_sources(self) -> dict[int, VideoSource]:
         return self._video_sources
 
@@ -229,6 +235,10 @@ class VideoSourceManager:
 
         self._start_video_source(id)
 
+        # Subscribe observers.
+        for observer in vid_src.subscribers.keys():
+            await self.subscribe_to(id, observer)
+
     async def disable_video_source(self, id: int) -> None:
         vid_src = self._video_sources[id]
         vid_src.enabled = False
@@ -240,7 +250,37 @@ class VideoSourceManager:
 
         logger.info(f'Disabled video source "{vid_src.name}" (id: {vid_src.id})')
 
+        # Unsubscribe observers, but continue keeping track of them for when the
+        # video stream is restarted.
+        for observer in vid_src.subscribers.keys():
+            await self.unsubscribe_from(id, observer, _hard=False)
+
         self._stop_video_source(id)
+
+    async def subscribe_to(self, id: int, observer: AsyncObserver[Frame]) -> None:
+        vid_src = self._video_sources[id]
+        vid_src.subscribers[observer] = None
+
+        # If the video stream is currently running,
+        # immediately subscribe the observer to the frames.
+        if vid_src.video_stream is not None:
+            subscription = await vid_src.video_stream.subscribe_async(observer)
+            vid_src.subscribers[observer] = subscription
+
+        logger.info(f'Subscription added to "{vid_src.name}" (id: {id})')
+
+    async def unsubscribe_from(
+        self, id: int, observer: AsyncObserver[Frame], _hard: bool = True
+    ) -> None:
+        vid_src = self._video_sources[id]
+        subscription = vid_src.subscribers[observer]
+        if subscription is not None:
+            await subscription.dispose_async()
+
+        if _hard:
+            del vid_src.subscribers[observer]
+
+        logger.info(f'Subscription removed from "{vid_src.name}" (id: {id}) (hard)')
 
     def _start_video_source(self, id: int) -> bool:
         vid_src = self._video_sources[id]

@@ -3,8 +3,11 @@ import logging
 import nicegui
 import sentinel_server.globals
 import sentinel_server.ui
-from nicegui import APIRouter, app, ui
+from aioreactive import AsyncObserver
+from nicegui import APIRouter, run, ui
 from nicegui.events import GenericEventArguments
+from PIL import Image
+from sentinel_core.video import Frame
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +96,7 @@ class CameraTable:
 
         vid_src_manager = sentinel_server.globals.video_source_manager
 
-        for _, vid_src in vid_src_manager.video_sources().items():
+        for _, vid_src in vid_src_manager.video_sources.items():
             self.table.add_row(
                 {
                     "id": vid_src.id,
@@ -237,6 +240,50 @@ async def cameras_page() -> None:
     await table.refresh()
 
 
+class CameraView(AsyncObserver[Frame]):
+    def __init__(self, id: int):
+        self.id = id
+        self.image = ui.interactive_image()
+
+    async def start_capture(self):
+        await sentinel_server.globals.video_source_manager_loaded.wait()
+        await sentinel_server.globals.video_source_manager_loaded_from_db.wait()
+
+        await sentinel_server.globals.video_source_manager.subscribe_to(self.id, self)
+
+        vid_src = sentinel_server.globals.video_source_manager.video_sources[self.id]
+        logger.info(f'Started displaying frames for "{vid_src.name}" (id: {self.id})')
+
+    async def stop_capture(self):
+        await sentinel_server.globals.video_source_manager.unsubscribe_from(
+            self.id, self
+        )
+
+        vid_src = sentinel_server.globals.video_source_manager.video_sources[self.id]
+        logger.info(f'Stopped displaying frames for "{vid_src.name}" (id: {self.id})')
+
+    async def asend(self, frame: Frame):
+        pil_image = await run.cpu_bound(Image.fromarray, frame.data)
+        self.image.set_source(pil_image)
+
+    async def athrow(self, error):
+        raise NotImplementedError
+
+    async def aclose(self):
+        raise NotImplementedError
+
+
 @router.page("/cameras/{id}")
 async def camera_view_page(id: int) -> None:
+    sentinel_server.ui.add_global_style()
+    sentinel_server.ui.pages_shared()
+
     ui.label(f"camera {id}")
+
+    camera_view = CameraView(id)
+
+    await ui.context.client.connected()
+    await camera_view.start_capture()
+
+    await ui.context.client.disconnected()
+    await camera_view.stop_capture()

@@ -21,6 +21,7 @@ toml = "^0.10.2"
 platformdirs = "^4.3.6"
 nicegui = "^2.4.0"
 watchgod = "^0.8.2"
+pillow = "^11.0.0"
 
 [tool.poetry.scripts]
 sentinel-server = "sentinel_server.start:entry"
