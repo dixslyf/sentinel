@@ -1,7 +1,7 @@
 import logging
 
 import nicegui
-from nicegui import APIRouter, ui
+from nicegui import APIRouter, app, ui
 
 import sentinel_server.globals
 import sentinel_server.ui
@@ -33,11 +33,20 @@ class CameraTable:
             "field": "plugin_component",
         },
         {"name": "status", "label": "Status", "field": "status"},
+        {"name": "view", "label": "View", "field": "view"},
     ]
 
     def __init__(self) -> None:
         self.table = ui.table(columns=CameraTable.columns, rows=[], row_key="id").props(
             "loading"
+        )
+
+        # Link for view.
+        self.table.add_slot(
+            "body-cell-view",
+            '<q-td :props="props">\n'
+            "   <a :href=\"'cameras/' + props.value\">{{ props.value }}</a>"
+            + "</q-td>",
         )
 
     async def refresh(self) -> None:
@@ -68,6 +77,7 @@ class CameraTable:
                     "name": vid_src.name,
                     "plugin_component": f"{vid_src.plugin_name} / {vid_src.component_name}",
                     "status": "Offline",  # TODO: query global video source manager about status
+                    "view": vid_src.id,  # TODO: change how this looks
                 }
             )
 
@@ -201,3 +211,8 @@ async def cameras_page() -> None:
     # Wait for the page to load before refreshing the table.
     await ui.context.client.connected()
     await table.refresh()
+
+
+@router.page("/cameras/{id}")
+async def camera_view_page(id: int) -> None:
+    ui.label(f"camera {id}")
