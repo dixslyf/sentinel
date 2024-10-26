@@ -5,7 +5,6 @@ import typing
 from enum import Enum
 from typing import Any, Optional, Self
 
-import cv2
 import sentinel_server.tasks
 from aioreactive import AsyncObservable, AsyncObserver, AsyncSubject
 from sentinel_core.plugins import ComponentDescriptor, ComponentKind
@@ -70,23 +69,6 @@ class ReactiveVideoStream(AsyncObservable[Frame]):
         self._run = False
         await self._raw_stream.clean_up()
         await self._subject.aclose()
-
-
-class OpenCVViewer(AsyncObserver[Frame]):
-    def __init__(self, win_name: str, always_show: bool = False):
-        self._win_name = win_name
-        self._always_show = always_show
-
-    async def asend(self, frame: Frame):
-        cv2.imshow(self._win_name, frame.data)
-
-    async def athrow(self, error):
-        if not self._always_show:
-            cv2.destroyWindow(self._win_name)
-
-    async def aclose(self):
-        if not self._always_show:
-            cv2.destroyWindow(self._win_name)
 
 
 class VideoSourceStatus(Enum):
