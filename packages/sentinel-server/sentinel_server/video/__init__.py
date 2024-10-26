@@ -280,7 +280,9 @@ class VideoSourceManager:
         if _hard:
             del vid_src.subscribers[observer]
 
-        logger.info(f'Subscription removed from "{vid_src.name}" (id: {id}) (hard)')
+        logger.info(
+            f'Subscription removed from "{vid_src.name}" (id: {id}) {"(hard)" if _hard else ""}'
+        )
 
     def _start_video_source(self, id: int) -> bool:
         vid_src = self._video_sources[id]
@@ -338,4 +340,8 @@ class VideoSourceManager:
             return False
 
         vid_src.task.cancel()
+        logging.info(
+            f'Cancellation request sent to video source task for "{vid_src.name}" (id: {vid_src.id})'
+        )
+
         return True

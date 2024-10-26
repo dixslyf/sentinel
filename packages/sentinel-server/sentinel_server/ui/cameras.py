@@ -2,9 +2,10 @@ import logging
 
 import nicegui
 import sentinel_server.globals
+import sentinel_server.tasks
 import sentinel_server.ui
 from aioreactive import AsyncObserver
-from nicegui import APIRouter, run, ui
+from nicegui import APIRouter, ui
 from nicegui.events import GenericEventArguments
 from PIL import Image
 from sentinel_core.video import Frame
@@ -263,7 +264,9 @@ class CameraView(AsyncObserver[Frame]):
         logger.info(f'Stopped displaying frames for "{vid_src.name}" (id: {self.id})')
 
     async def asend(self, frame: Frame):
-        pil_image = await run.cpu_bound(Image.fromarray, frame.data)
+        pil_image = await sentinel_server.tasks.run_in_process(
+            Image.fromarray, frame.data
+        )
         self.image.set_source(pil_image)
 
     async def athrow(self, error):
