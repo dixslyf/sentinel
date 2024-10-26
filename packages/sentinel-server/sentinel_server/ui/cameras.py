@@ -186,6 +186,7 @@ class AddCameraDialog:
 
 @router.page("/cameras")
 async def cameras_page() -> None:
+    sentinel_server.ui.add_global_style()
     sentinel_server.ui.pages_shared()
 
     ui.label("Cameras")
