@@ -5,6 +5,7 @@ from nicegui import APIRouter, app, ui
 
 import sentinel_server.auth
 import sentinel_server.ui
+from sentinel_server.ui.utils import ConfirmationDialog
 
 logger = logging.getLogger(__name__)
 
@@ -79,9 +80,24 @@ class AuthenticationSection:
         ui.notify("Updated password!")
 
 
+class SystemSection:
+    def __init__(self) -> None:
+        shutdown_confirm_dialog = ConfirmationDialog(
+            "Are you sure you want to shutdown Sentinel?",
+            on_yes=lambda _: app.shutdown(),
+        )
+
+        system_card = ui.card()
+        with system_card:
+            ui.label("System")
+            ui.button("Shutdown", on_click=shutdown_confirm_dialog.open)
+
+
 @router.page("/settings")
 def settings():
     sentinel_server.ui.pages_shared()
     ui.label("settings")
 
     AuthenticationSection()
+
+    SystemSection()
