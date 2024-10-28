@@ -1,10 +1,12 @@
 import logging
+import os
 
 import nicegui
 from nicegui import APIRouter, app, ui
 
 import sentinel_server.auth
 import sentinel_server.ui
+from sentinel_server.ui.login import logout_user
 from sentinel_server.ui.utils import ConfirmationDialog
 
 logger = logging.getLogger(__name__)
@@ -82,15 +84,32 @@ class AuthenticationSection:
 
 class SystemSection:
     def __init__(self) -> None:
+        restart_confirm_dialog = ConfirmationDialog(
+            "Restart Sentinel?",
+            on_yes=self._restart,
+        )
+
         shutdown_confirm_dialog = ConfirmationDialog(
-            "Are you sure you want to shutdown Sentinel?",
+            "Shut down Sentinel?",
             on_yes=lambda _: app.shutdown(),
         )
 
         system_card = ui.card()
         with system_card:
             ui.label("System")
-            ui.button("Shutdown", on_click=shutdown_confirm_dialog.open)
+
+            with ui.grid(columns=2):
+                ui.button("Restart", on_click=restart_confirm_dialog.open)
+                ui.button("Shutdown", on_click=shutdown_confirm_dialog.open)
+
+    def _restart(self, button: nicegui.elements.button.Button) -> None:
+        # Log the user out.
+        logout_user()
+
+        # As suggested by:
+        # https://github.com/zauberzeug/nicegui/discussions/1719#discussioncomment-7159050.
+        # Assumes `ui.run(..., reload=True)`.
+        os.utime(__file__)
 
 
 @router.page("/settings")
