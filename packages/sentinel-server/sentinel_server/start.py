@@ -47,16 +47,12 @@ async def setup():
         os.makedirs, platformdirs.user_data_dir("sentinel"), exist_ok=True
     )
 
-    # Load configuration from the configuration file.
-    config_path = os.environ.get(
-        "SENTINEL_CONFIG_PATH",
-        os.path.join(platformdirs.user_config_dir("sentinel"), "config.toml"),
-    )
-    config = await run.io_bound(sentinel_server.config.get_config, config_path)
+    # Load configuration.
+    await sentinel_server.globals.init_config()
 
     # Initialise database.
     await Tortoise.init(
-        db_url=config.db_url,
+        db_url=sentinel_server.globals.config.db_url,
         modules={"models": ["sentinel_server.models"]},
     )
     await Tortoise.generate_schemas(safe=True)
@@ -65,7 +61,7 @@ async def setup():
     await sentinel_server.auth.ensure_one_user()
 
     # Discover and load plugins.
-    sentinel_server.globals.init_plugin_manager(config.plugin_whitelist)
+    sentinel_server.globals.init_plugin_manager()
     await run.io_bound(sentinel_server.globals.plugin_manager.init_plugins)
     sentinel_server.globals.plugins_loaded.set()
 

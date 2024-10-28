@@ -2,9 +2,11 @@ import logging
 import os
 
 import nicegui
-from nicegui import APIRouter, app, ui
+from nicegui import APIRouter, app, run, ui
+from nicegui.events import GenericEventArguments
 
 import sentinel_server.auth
+import sentinel_server.globals
 import sentinel_server.ui
 from sentinel_server.ui.login import logout_user
 from sentinel_server.ui.utils import ConfirmationDialog
@@ -12,6 +14,102 @@ from sentinel_server.ui.utils import ConfirmationDialog
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+class PluginTable:
+    """
+    Represents a table of plugins.
+    """
+
+    columns = [
+        {
+            "name": "name",
+            "label": "Name",
+            "field": "name",
+            "required": True,
+        },
+        {"name": "enabled", "label": "Enabled", "field": "enabled"},
+    ]
+
+    def __init__(self) -> None:
+        self.table = ui.table(
+            columns=PluginTable.columns, rows=[], row_key="name"
+        ).props("loading")
+
+        self.dirty_msg = ui.label("Restart Sentinel to apply changes.")
+
+        # Enabled checkbox.
+        self.table.add_slot(
+            "body-cell-enabled",
+            '<q-td :props="props">'
+            + '<q-checkbox v-model="props.row.enabled" @update:model-value="() => $parent.$emit(\'update_enabled\', props)" />\n'
+            + "</q-td>",
+        )
+        self.table.on("update_enabled", self.update_enabled_handler)
+
+    async def update_enabled_handler(self, msg: GenericEventArguments):
+        """
+        Handler for when the enabled checkbox for a plugin is toggled.
+        """
+        # Note: The row index is guaranteed to be the same as the index
+        # to the plugin manager's list of plugin descriptors. So, it is
+        # safe to pass this index to `add_to_whitelist` and `remove_from_whitelist`.
+        row_idx = msg.args["rowIndex"]
+        enabled = msg.args["row"]["enabled"]
+
+        await sentinel_server.globals.plugin_manager_loaded.wait()
+        await sentinel_server.globals.plugins_loaded.wait()
+        plugin_manager = sentinel_server.globals.plugin_manager
+        if enabled:
+            await run.io_bound(plugin_manager.add_to_whitelist, row_idx)
+        else:
+            await run.io_bound(plugin_manager.remove_from_whitelist, row_idx)
+
+        await self.refresh_dirty_message()
+
+    async def refresh(self) -> None:
+        """
+        Refreshes the plugins table by clearing existing rows and
+        repopulating it with the list of plugins from the plugin manager.
+        """
+        self.table.rows.clear()
+        self.table.update()
+
+        # Wait for the plugin manager to be initialised.
+        await sentinel_server.globals.plugin_manager_loaded.wait()
+        await sentinel_server.globals.plugins_loaded.wait()
+
+        plugin_manager = sentinel_server.globals.plugin_manager
+
+        for plugin_desc in plugin_manager.plugin_descriptors:
+            self.table.add_row(
+                {
+                    "name": plugin_desc.name,
+                    "enabled": plugin_desc.plugin is not None,
+                }
+            )
+
+        self.table.props("loading=false")
+        logger.debug("Refreshed plugin table")
+
+        await self.refresh_dirty_message()
+
+    async def refresh_dirty_message(self) -> None:
+        await sentinel_server.globals.plugin_manager_loaded.wait()
+        await sentinel_server.globals.plugins_loaded.wait()
+        plugin_manager = sentinel_server.globals.plugin_manager
+        self.dirty_msg.visible = plugin_manager.is_dirty
+
+
+class PluginsSection:
+    def __init__(self):
+        plugins_card = ui.card()
+        with plugins_card:
+            ui.label("Plugins")
+            self.table = PluginTable()
+
+    async def refresh(self) -> None:
+        await self.table.refresh()
 
 
 class AuthenticationSection:
@@ -113,10 +211,14 @@ class SystemSection:
 
 
 @router.page("/settings")
-def settings():
+async def settings():
     sentinel_server.ui.pages_shared()
     ui.label("settings")
+
+    plugins_section = PluginsSection()
 
     AuthenticationSection()
 
     SystemSection()
+
+    await plugins_section.refresh()
