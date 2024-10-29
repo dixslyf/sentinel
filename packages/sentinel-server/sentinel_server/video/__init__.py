@@ -78,15 +78,9 @@ class VideoSourceStatus(Enum):
 
 @dataclasses.dataclass
 class VideoSource:
-    id: int
-    name: str
-    enabled: bool
+    db_info: DbVideoSource
+
     status: VideoSourceStatus
-    config: dict[str, Any]
-
-    plugin_name: str
-    component_name: str
-
     subscribers: dict[AsyncObserver, Optional[AsyncDisposable]] = dataclasses.field(
         default_factory=lambda: {}
     )
@@ -97,6 +91,30 @@ class VideoSource:
     video_stream: Optional[ReactiveVideoStream] = None
     task: Optional[asyncio.Task] = None
 
+    @property
+    def id(self) -> int:
+        return self.db_info.id
+
+    @property
+    def name(self) -> str:
+        return self.db_info.name
+
+    @property
+    def enabled(self) -> bool:
+        return self.db_info.enabled
+
+    @property
+    def plugin_name(self) -> str:
+        return self.db_info.plugin_name
+
+    @property
+    def component_name(self) -> str:
+        return self.db_info.component_name
+
+    @property
+    def config(self) -> dict[str, Any]:
+        return self.db_info.config
+
 
 class VideoSourceManager:
     def __init__(self, plugin_manager: PluginManager) -> None:
@@ -106,13 +124,8 @@ class VideoSourceManager:
     async def load_video_sources_from_db(self) -> None:
         async for db_vid_src in DbVideoSource.all():
             vid_src = VideoSource(
-                id=db_vid_src.id,
-                name=db_vid_src.name,
-                enabled=db_vid_src.enabled,
+                db_info=db_vid_src,
                 status=VideoSourceStatus.Ok,
-                config=db_vid_src.config,
-                plugin_name=db_vid_src.plugin_name,
-                component_name=db_vid_src.component_name,
             )
             self._video_sources[vid_src.id] = vid_src
 
@@ -193,13 +206,8 @@ class VideoSourceManager:
 
         # Create the video source.
         vid_src = VideoSource(
-            id=db_vid_src.id,
-            name=name,
-            enabled=False,
+            db_info=db_vid_src,
             status=VideoSourceStatus.Ok,
-            config=config,
-            plugin_name=db_vid_src.plugin_name,
-            component_name=db_vid_src.component_name,
             plugin_desc=plugin_desc,
             component=component,
         )
@@ -224,12 +232,10 @@ class VideoSourceManager:
 
     async def enable_video_source(self, id: int) -> None:
         vid_src = self._video_sources[id]
-        vid_src.enabled = True
 
         # Update the corresponding entry in the database.
-        db_vid_src = await DbVideoSource.get(id=vid_src.id)
-        db_vid_src.enabled = True
-        await db_vid_src.save()
+        vid_src.db_info.enabled = True
+        await vid_src.db_info.save()
 
         logger.info(f'Enabled video source "{vid_src.name}" (id: {vid_src.id})')
 
@@ -241,12 +247,10 @@ class VideoSourceManager:
 
     async def disable_video_source(self, id: int) -> None:
         vid_src = self._video_sources[id]
-        vid_src.enabled = False
 
         # Update the corresponding entry in the database.
-        db_vid_src = await DbVideoSource.get(id=vid_src.id)
-        db_vid_src.enabled = False
-        await db_vid_src.save()
+        vid_src.db_info.enabled = False
+        await vid_src.db_info.save()
 
         logger.info(f'Disabled video source "{vid_src.name}" (id: {vid_src.id})')
 
