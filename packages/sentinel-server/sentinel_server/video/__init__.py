@@ -5,7 +5,6 @@ import typing
 from enum import Enum
 from typing import Any, Optional, Self
 
-import sentinel_server.tasks
 from aioreactive import AsyncDisposable, AsyncObservable, AsyncObserver, AsyncSubject
 from sentinel_core.plugins import ComponentDescriptor, ComponentKind
 from sentinel_core.video import (
@@ -14,6 +13,8 @@ from sentinel_core.video import (
     SyncVideoStream,
     VideoStreamNoDataException,
 )
+
+import sentinel_server.tasks
 from sentinel_server.models import VideoSource as DbVideoSource
 from sentinel_server.plugins import PluginDescriptor, PluginManager
 
@@ -149,6 +150,12 @@ class VideoSourceManager:
                 continue
             vid_src.plugin_desc = plugin_desc
 
+            # If the plugin isn't loaded (i.e., it is not part of the whitelist),
+            # then we set error as well.
+            if plugin_desc.plugin is None:
+                vid_src.status = VideoSourceStatus.Error
+                continue
+
             # Find the video stream component.
             comp = next(
                 (
@@ -185,6 +192,7 @@ class VideoSourceManager:
             (
                 plugin_desc
                 for plugin_desc in self._plugin_manager.plugin_descriptors
+                if plugin_desc.plugin is not None
                 for plugin_comp in plugin_desc.plugin.components
                 if plugin_comp is component
             ),
@@ -221,6 +229,7 @@ class VideoSourceManager:
         return [
             component
             for plugin_desc in self._plugin_manager.plugin_descriptors
+            if plugin_desc.plugin is not None
             for component in plugin_desc.plugin.components
             if component.kind == ComponentKind.AsyncVideoStream
             or component.kind == ComponentKind.SyncVideoStream
