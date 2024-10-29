@@ -1,15 +1,17 @@
 import logging
+from typing import Any, Optional
 
 import nicegui
-from aioreactive import AsyncObserver
+from aioreactive import AsyncDisposable, AsyncObserver
 from nicegui import APIRouter, ui
 from nicegui.events import GenericEventArguments
 from PIL import Image
-from sentinel_core.video import Frame
 
 import sentinel_server.globals
 import sentinel_server.tasks
 import sentinel_server.ui
+from sentinel_server.video import Frame
+from sentinel_server.video.detect import ReactiveDetectionVisualiser
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +25,7 @@ class CameraTable:
     The table is dynamically populated with video sources retrieved from the database.
     """
 
-    columns = [
+    columns: list[dict[str, Any]] = [
         {
             "name": "id",
             "label": "ID",
@@ -324,19 +326,28 @@ class CameraView(AsyncObserver[Frame]):
         self.id = id
         self.image = ui.interactive_image()
 
+        self.visualiser = ReactiveDetectionVisualiser()
+        self.sub: Optional[AsyncDisposable] = None
+
     async def start_capture(self):
         await sentinel_server.globals.video_source_manager_loaded.wait()
         await sentinel_server.globals.video_source_manager_loaded_from_db.wait()
 
-        await sentinel_server.globals.video_source_manager.subscribe_to(self.id, self)
+        await sentinel_server.globals.video_source_manager.subscribe_to(
+            self.id, self.visualiser
+        )
+
+        self.sub = await self.visualiser.subscribe_async(self)
 
         vid_src = sentinel_server.globals.video_source_manager.video_sources[self.id]
         logger.info(f'Started displaying frames for "{vid_src.name}" (id: {self.id})')
 
     async def stop_capture(self):
         await sentinel_server.globals.video_source_manager.unsubscribe_from(
-            self.id, self
+            self.id, self.visualiser
         )
+
+        await self.sub.dispose_async()
 
         vid_src = sentinel_server.globals.video_source_manager.video_sources[self.id]
         logger.info(f'Stopped displaying frames for "{vid_src.name}" (id: {self.id})')

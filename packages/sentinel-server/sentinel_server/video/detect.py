@@ -1,6 +1,7 @@
+from typing import Self
+
 import cv2
 import numpy as np
-from typing import Self
 from aioreactive import AsyncObservable, AsyncObserver, AsyncSubject
 from sentinel_core.video import Frame
 from sentinel_core.video.detect import AsyncDetector, DetectionResult, SyncDetector
@@ -42,7 +43,9 @@ def visualise_detections(detection_result: DetectionResult) -> Frame:
     return frame
 
 
-class DetectionResultVisualiser(AsyncObservable[Frame], AsyncObserver[DetectionResult]):
+class ReactiveDetectionVisualiser(
+    AsyncObservable[Frame], AsyncObserver[DetectionResult]
+):
     def __init__(self, inplace: bool = False):
         self._subject_out: AsyncSubject[Frame] = AsyncSubject()
         self._inplace = inplace

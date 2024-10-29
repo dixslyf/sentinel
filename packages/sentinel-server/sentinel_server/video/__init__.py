@@ -17,7 +17,7 @@ from sentinel_core.video import (
 import sentinel_server.tasks
 from sentinel_server.models import VideoSource as DbVideoSource
 from sentinel_server.plugins import PluginDescriptor, PluginManager
-from sentinel_server.video.detect import ReactiveDetector
+from sentinel_server.video.detect import DetectionResult, ReactiveDetector
 
 logger = logging.getLogger(__name__)
 
@@ -83,8 +83,8 @@ class VideoSource:
     db_info: DbVideoSource
 
     status: VideoSourceStatus
-    subscribers: dict[AsyncObserver, Optional[AsyncDisposable]] = dataclasses.field(
-        default_factory=lambda: {}
+    subscribers: dict[AsyncObserver[DetectionResult], Optional[AsyncDisposable]] = (
+        dataclasses.field(default_factory=lambda: {})
     )
 
     vidstream_plugin_desc: Optional[PluginDescriptor] = None
@@ -388,20 +388,22 @@ class VideoSourceManager:
         await self._stop_detector(id)
         self._stop_video_stream(id)
 
-    async def subscribe_to(self, id: int, observer: AsyncObserver[Frame]) -> None:
+    async def subscribe_to(
+        self, id: int, observer: AsyncObserver[DetectionResult]
+    ) -> None:
         vid_src = self._video_sources[id]
         vid_src.subscribers[observer] = None
 
-        # If the video stream is currently running,
-        # immediately subscribe the observer to the frames.
-        if vid_src.video_stream is not None:
-            subscription = await vid_src.video_stream.subscribe_async(observer)
+        # If the detector is currently running,
+        # immediately subscribe the observer to the detection results.
+        if vid_src.detector is not None:
+            subscription = await vid_src.detector.subscribe_async(observer)
             vid_src.subscribers[observer] = subscription
 
         logger.info(f'Subscription added to "{vid_src.name}" (id: {id})')
 
     async def unsubscribe_from(
-        self, id: int, observer: AsyncObserver[Frame], _hard: bool = True
+        self, id: int, observer: AsyncObserver[DetectionResult], _hard: bool = True
     ) -> None:
         vid_src = self._video_sources[id]
         subscription = vid_src.subscribers[observer]
