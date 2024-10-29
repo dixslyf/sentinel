@@ -131,51 +131,43 @@ class VideoSourceManager:
             self._video_sources[vid_src.id] = vid_src
 
             # Find the plugin.
-            plugin_desc = next(
-                (
-                    plugin_desc
-                    for plugin_desc in self._plugin_manager.plugin_descriptors
-                    if plugin_desc.name == db_vid_src.plugin_name
-                ),
-                None,
+            vid_src.plugin_desc = self._plugin_manager.find_plugin_desc_by_name(
+                db_vid_src.plugin_name
             )
 
             # If we can't find the plugin, then we just set the status to error.
-            if plugin_desc is None:
+            if vid_src.plugin_desc is None:
                 vid_src.status = VideoSourceStatus.Error
                 logger.info(
                     f'Recreated video source from database for "{db_vid_src.name}" (id: {db_vid_src.id})'
                     "but could not find video stream component"
                 )
                 continue
-            vid_src.plugin_desc = plugin_desc
 
             # If the plugin isn't loaded (i.e., it is not part of the whitelist),
             # then we set error as well.
-            if plugin_desc.plugin is None:
+            if vid_src.plugin_desc.plugin is None:
                 vid_src.status = VideoSourceStatus.Error
+                logger.info(
+                    f'Recreated video source from database for "{db_vid_src.name}" (id: {db_vid_src.id})'
+                    "but plugin is not loaded"
+                )
                 continue
 
             # Find the video stream component.
-            comp = next(
-                (
-                    comp
-                    for comp in plugin_desc.plugin.components
-                    if comp.display_name == db_vid_src.component_name
-                ),
-                None,
+            vid_src.component = vid_src.plugin_desc.plugin.find_component_by_name(
+                db_vid_src.component_name
             )
 
             # Likewise, if we can't find the video stream component,
             # then we just set the status to error.
-            if comp is None:
+            if vid_src.component is None:
                 vid_src.status = VideoSourceStatus.Error
                 logger.info(
                     f'Recreated video source from database for "{db_vid_src.name}" (id: {db_vid_src.id})'
                     "but could not find video stream component"
                 )
                 continue
-            vid_src.component = comp
 
             logger.info(
                 f'Recreated video source from database for "{db_vid_src.name}" (id: {db_vid_src.id})'

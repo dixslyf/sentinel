@@ -78,6 +78,19 @@ class PluginManager:
 
         self._is_dirty = True
 
+    def find_plugin_desc_by_name(self, name: str) -> Optional[PluginDescriptor]:
+        """
+        Finds the first plugin descriptor matching the given name.
+        """
+        return next(
+            (
+                plugin_desc
+                for plugin_desc in self.plugin_descriptors
+                if plugin_desc.name == name
+            ),
+            None,
+        )
+
     def _discover_plugins(self) -> EntryPoints:
         entry_points = importlib.metadata.entry_points(group="sentinel.plugins")
         logger.info(

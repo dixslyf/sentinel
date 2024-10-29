@@ -49,9 +49,14 @@ class ComponentDescriptor[
 
 
 class Plugin(Protocol):
-    @property
-    @abstractmethod
-    def components(self) -> Sequence[ComponentDescriptor]:
+    components: Sequence[ComponentDescriptor]
+
+    @classmethod
+    def find_component_by_name(cls, name: str) -> Optional[ComponentDescriptor]:
         """
-        Returns the components provided by this plugin.
+        Finds the first component with the given display name.
         """
+        return next(
+            (comp for comp in cls.components if comp.display_name == name),
+            None,
+        )
