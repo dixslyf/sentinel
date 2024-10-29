@@ -73,7 +73,7 @@ def login_form() -> Optional[RedirectResponse]:
     async def try_login() -> None:
         logging.info(f"Checking login credentials for: {username_input.value}")
 
-        db_user: sentinel_server.models.User = (
+        db_user: Optional[sentinel_server.models.User] = (
             await sentinel_server.models.User.get_or_none(username=username_input.value)
         )
 

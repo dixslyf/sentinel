@@ -44,8 +44,8 @@ class ComponentDescriptor[
     display_name: str
     kind: ComponentKind
     cls: type[T]
-    args: tuple[ComponentArgDescriptor]
-    args_transform: Optional[Callable[dict[str, Any], dict[str, Any]]] = None
+    args: tuple[ComponentArgDescriptor, ...]
+    args_transform: Optional[Callable[[dict[str, Any]], dict[str, Any]]] = None
 
 
 class Plugin(Protocol):

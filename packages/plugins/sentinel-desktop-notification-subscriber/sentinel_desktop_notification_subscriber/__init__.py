@@ -1,8 +1,4 @@
-import asyncio
-import typing
-from asyncio import Future
 from collections.abc import Iterable
-from typing import Self
 
 from notifypy import Notify
 from sentinel_core.alert import Alert, Subscriber

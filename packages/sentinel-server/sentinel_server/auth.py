@@ -1,7 +1,6 @@
 import logging
 
 import bcrypt
-import tortoise
 
 from sentinel_server.models import User
 

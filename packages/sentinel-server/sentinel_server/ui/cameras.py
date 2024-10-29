@@ -1,10 +1,11 @@
 import logging
 from typing import Any, Optional
 
-import nicegui
 from aioreactive import AsyncDisposable, AsyncObserver
 from nicegui import APIRouter, ui
-from nicegui.events import GenericEventArguments
+from nicegui.elements.input import Input
+from nicegui.elements.select import Select
+from nicegui.events import GenericEventArguments, ValueChangeEventArguments
 from PIL import Image
 
 import sentinel_server.globals
@@ -147,10 +148,10 @@ class AddCameraDialog:
         # Dictionary that maps each argument display name of the currently selected
         # video stream component to a NiceGUI input box. Used for retrieving the user's
         # inputs when they complete the form.
-        self.vidstream_inputs: dict[str, nicegui.element.Element] = {}
+        self.vidstream_inputs: dict[str, Input | Select] = {}
 
         # Same as the above but for detectors.
-        self.detector_inputs: dict[str, nicegui.element.Element] = {}
+        self.detector_inputs: dict[str, Input | Select] = {}
 
         with self.dialog, ui.card():
             ui.label("Add Camera")
@@ -214,9 +215,7 @@ class AddCameraDialog:
             {comp: comp.display_name for comp in available_detector_comps}
         )
 
-    def _update_vidstream_config_inputs(
-        self, vidstream_select: nicegui.elements.select.Select
-    ) -> None:
+    def _update_vidstream_config_inputs(self, args: ValueChangeEventArguments) -> None:
         """
         Updates the user interface by dynamically adding input fields
         for the currently selected video stream component's configuration.
@@ -240,9 +239,7 @@ class AddCameraDialog:
                     )
                     self.vidstream_inputs[arg.arg_name] = select
 
-    def _update_detector_config_inputs(
-        self, vidstream_select: nicegui.elements.select.Select
-    ) -> None:
+    def _update_detector_config_inputs(self, args: ValueChangeEventArguments) -> None:
         """
         Updates the user interface by dynamically adding input fields
         for the currently selected detector component's configuration.

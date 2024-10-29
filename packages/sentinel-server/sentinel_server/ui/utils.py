@@ -1,7 +1,7 @@
 from typing import Callable, Optional
 
-import nicegui
 from nicegui import ui
+from nicegui.events import ClickEventArguments
 
 
 class ConfirmationDialog:
@@ -13,8 +13,8 @@ class ConfirmationDialog:
         self,
         body: str,
         header: str = "Confirmation",
-        on_no: Optional[Callable[[nicegui.elements.button.Button], None]] = None,
-        on_yes: Optional[Callable[[nicegui.elements.button.Button], None]] = None,
+        on_no: Optional[Callable[[ClickEventArguments], None]] = None,
+        on_yes: Optional[Callable[[ClickEventArguments], None]] = None,
     ) -> None:
         """
         Initialises the confirmation dialog.
@@ -31,14 +31,14 @@ class ConfirmationDialog:
         """
         self.dialog = ui.dialog()
 
-        def on_no_wrapper(button: nicegui.elements.button.Button) -> None:
+        def on_no_wrapper(args: ClickEventArguments) -> None:
             if on_no is not None:
-                on_no(button)
+                on_no(args)
             self.close()
 
-        def on_yes_wrapper(button: nicegui.elements.button.Button) -> None:
+        def on_yes_wrapper(args: ClickEventArguments) -> None:
             if on_yes is not None:
-                on_yes(button)
+                on_yes(args)
             self.close()
 
         with self.dialog, ui.card():

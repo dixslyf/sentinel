@@ -1,4 +1,4 @@
-from typing import Any, Optional, Self
+from typing import Any, Optional
 
 import cv2
 import numpy as np
@@ -41,14 +41,6 @@ class OpenCVVideoStream(SyncVideoStream):
         Alternatively, use an `async with` statement to automatically perform the clean-up.
         """
         self._capture.release()
-
-    # For use with `with` statements.
-    def __enter__(self) -> Self:
-        return self
-
-    # For use with `with` statements.
-    def __exit__(self, exc_type, exc_value, traceback) -> None:
-        self.destroy()
 
 
 def args_transform(kwargs: dict[str, Any]) -> dict[str, Any]:
