@@ -20,6 +20,11 @@ class VideoSource(Model):
     id = fields.IntField(pk=True)
     name = fields.CharField(max_length=255, unique=True)
     enabled = fields.BooleanField()
-    plugin_name = fields.CharField(max_length=255)
-    component_name = fields.CharField(max_length=255)
-    config = fields.JSONField()
+
+    vidstream_plugin_name = fields.CharField(max_length=255)
+    vidstream_component_name = fields.CharField(max_length=255)
+    vidstream_config = fields.JSONField()
+
+    detector_plugin_name = fields.CharField(max_length=255)
+    detector_component_name = fields.CharField(max_length=255)
+    detector_config = fields.JSONField()

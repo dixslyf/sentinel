@@ -1,14 +1,15 @@
 import logging
 
 import nicegui
-import sentinel_server.globals
-import sentinel_server.tasks
-import sentinel_server.ui
 from aioreactive import AsyncObserver
 from nicegui import APIRouter, ui
 from nicegui.events import GenericEventArguments
 from PIL import Image
 from sentinel_core.video import Frame
+
+import sentinel_server.globals
+import sentinel_server.tasks
+import sentinel_server.ui
 
 logger = logging.getLogger(__name__)
 
@@ -32,9 +33,14 @@ class CameraTable:
         },
         {"name": "name", "label": "Name", "field": "name"},
         {
-            "name": "plugin_component",
-            "label": "Plugin / Component",
-            "field": "plugin_component",
+            "name": "vidstream_plugin_component",
+            "label": "Video Stream Plugin / Component",
+            "field": "vidstream_plugin_component",
+        },
+        {
+            "name": "detector_plugin_component",
+            "label": "Detector Plugin / Component",
+            "field": "detector_plugin_component",
         },
         {"name": "status", "label": "Status", "field": "status"},
         {"name": "enabled", "label": "Enabled", "field": "enabled"},
@@ -102,7 +108,8 @@ class CameraTable:
                 {
                     "id": vid_src.id,
                     "name": vid_src.name,
-                    "plugin_component": f"{vid_src.plugin_name} / {vid_src.component_name}",
+                    "vidstream_plugin_component": f"{vid_src.vidstream_plugin_name} / {vid_src.vidstream_component_name}",
+                    "detector_plugin_component": f"{vid_src.detector_plugin_name} / {vid_src.detector_component_name}",
                     "status": "Offline",  # TODO: query global video source manager about status
                     "enabled": vid_src.enabled,
                     "view": vid_src.id,  # TODO: change how this looks
@@ -138,7 +145,10 @@ class AddCameraDialog:
         # Dictionary that maps each argument display name of the currently selected
         # video stream component to a NiceGUI input box. Used for retrieving the user's
         # inputs when they complete the form.
-        self.vidstream_inputs: dict[str, nicegui.elements.input.Input] = {}
+        self.vidstream_inputs: dict[str, nicegui.element.Element] = {}
+
+        # Same as the above but for detectors.
+        self.detector_inputs: dict[str, nicegui.element.Element] = {}
 
         with self.dialog, ui.card():
             ui.label("Add Camera")
@@ -149,7 +159,7 @@ class AddCameraDialog:
             # Selection box for the video stream component.
             self.vidstream_select = ui.select({}, label="Video stream type")
 
-            # Card section containing inputs for configuration specific
+            # Section containing inputs for configuration specific
             # to the video stream component and plugin.
             self.vidstream_section = ui.element("div")
 
@@ -157,26 +167,49 @@ class AddCameraDialog:
             # the currently selected video stream component.
             self.vidstream_select.on_value_change(self._update_vidstream_config_inputs)
 
+            # Selection box for the detector component.
+            self.detector_select = ui.select({}, label="Detector type")
+
+            # Section containing inputs for configuration specific
+            # to the detector component and plugin.
+            self.detector_section = ui.element("div")
+
+            # Update the form to show configuration inputs for
+            # the currently selected detector component.
+            self.detector_select.on_value_change(self._update_detector_config_inputs)
+
             with ui.grid(columns=2):
                 ui.button("Close", on_click=self.close)
                 ui.button("Finish", on_click=self._on_finish)
 
-    def open(self):
+    async def open(self):
         """Opens the dialog."""
-        self._update_vidstream_select_options()
+        await self._update_vidstream_select_options()
+        await self._update_detector_select_options()
         self.dialog.open()
 
     def close(self):
         """Closes the dialog."""
         self.dialog.close()
 
-    def _update_vidstream_select_options(self) -> None:
+    async def _update_vidstream_select_options(self) -> None:
         """Updates the options for the dropdown selection box for the video stream component."""
+        await sentinel_server.globals.video_source_manager_loaded.wait()
         vid_src_manager = sentinel_server.globals.video_source_manager
         available_vidstream_comps = vid_src_manager.available_vidstream_components()
 
         self.vidstream_select.set_options(
             {comp: comp.display_name for comp in available_vidstream_comps}
+        )
+
+    async def _update_detector_select_options(self) -> None:
+        """Updates the options for the dropdown selection box for the detector component."""
+        await sentinel_server.globals.video_source_manager_loaded.wait()
+        vid_src_manager = sentinel_server.globals.video_source_manager
+        available_detector_comps = vid_src_manager.available_detector_components()
+
+        self.detector_select.set_options(
+            {comp: comp.display_name for comp in available_detector_comps}
         )
 
     def _update_vidstream_config_inputs(
@@ -195,8 +228,43 @@ class AddCameraDialog:
         comp = self.vidstream_select.value
         with self.vidstream_section:
             for arg in comp.args:
-                input = ui.input(label=arg.display_name)
-                self.vidstream_inputs[arg.arg_name] = input
+                if arg.choices is None:
+                    input = ui.input(label=arg.display_name)
+                    self.vidstream_inputs[arg.arg_name] = input
+                else:
+                    select = ui.select(
+                        {choice.value: choice.display_name for choice in arg.choices},
+                        label=arg.display_name,
+                    )
+                    self.vidstream_inputs[arg.arg_name] = select
+
+    def _update_detector_config_inputs(
+        self, vidstream_select: nicegui.elements.select.Select
+    ) -> None:
+        """
+        Updates the user interface by dynamically adding input fields
+        for the currently selected detector component's configuration.
+
+        Args:
+            vidstream_select (nicegui.elements.select.Select): The dropdown selection element.
+        """
+        # TODO: Reduce code duplication with the vidstream counterpart.
+
+        self.detector_inputs = {}
+        self.detector_section.clear()
+
+        comp = self.detector_select.value
+        with self.detector_section:
+            for arg in comp.args:
+                if arg.choices is None:
+                    input = ui.input(label=arg.display_name)
+                    self.detector_inputs[arg.arg_name] = input
+                else:
+                    select = ui.select(
+                        {choice.value: choice.display_name for choice in arg.choices},
+                        label=arg.display_name,
+                    )
+                    self.detector_inputs[arg.arg_name] = select
 
     async def _on_finish(self) -> None:
         """
@@ -208,12 +276,22 @@ class AddCameraDialog:
             arg_name: input.value for arg_name, input in self.vidstream_inputs.items()
         }
 
-        comp = self.vidstream_select.value
+        # Keyword args for creating the detector.
+        detector_kwargs = {
+            arg_name: input.value for arg_name, input in self.detector_inputs.items()
+        }
+
+        vidstream_comp = self.vidstream_select.value
+        detector_comp = self.detector_select.value
 
         try:
             vid_src_manager = sentinel_server.globals.video_source_manager
             await vid_src_manager.add_video_source(
-                self.name_input.value, comp, vidstream_kwargs
+                self.name_input.value,
+                vidstream_comp,
+                vidstream_kwargs,
+                detector_comp,
+                detector_kwargs,
             )
         except Exception as ex:
             ui.notify(f"An error occurred: {ex}", color="negative")

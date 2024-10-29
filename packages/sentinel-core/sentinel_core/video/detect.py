@@ -32,12 +32,23 @@ class DetectionResult:
     detections: Sequence[Detection]
 
 
-class Detector(Protocol):
+class AsyncDetector(Protocol):
     """
-    Protocol for raw object detectors.
+    Protocol for raw asynchronous object detectors.
     """
 
     async def detect(self, frame: Frame) -> DetectionResult:
         """
         Detects objects in the given frame asynchronously.
+        """
+
+
+class SyncDetector(Protocol):
+    """
+    Protocol for raw synchronous object detectors.
+    """
+
+    def detect(self, frame: Frame) -> DetectionResult:
+        """
+        Detects objects in the given frame synchronously.
         """

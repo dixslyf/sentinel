@@ -13,8 +13,8 @@ from sentinel_core.video.detect import (
     BoundingBox,
     Detection,
     DetectionResult,
-    Detector,
     PredictedCategory,
+    SyncDetector,
 )
 
 
@@ -43,7 +43,7 @@ class ModelType(Enum):
             raise AssertionError("Unreachable code")
 
 
-class UltralyticsDetector(Detector):
+class UltralyticsDetector(SyncDetector):
     def __init__(self, model_type: str | ModelType, model_path: str):
         if isinstance(model_type, str):
             try:
@@ -57,7 +57,7 @@ class UltralyticsDetector(Detector):
         model_class = model_type.to_model_class()
         self._model = model_class(model_path)
 
-    async def detect(self, frame: Frame) -> DetectionResult:
+    def detect(self, frame: Frame) -> DetectionResult:
         detections = []
         results = self._model(frame.data, verbose=False)
         for result in results:
@@ -84,7 +84,7 @@ class UltralyticsDetector(Detector):
 
 _ultralytics_detector_descriptor = ComponentDescriptor(
     display_name="Ultralytics",
-    kind=ComponentKind.Detector,
+    kind=ComponentKind.SyncDetector,
     cls=UltralyticsDetector,
     args=(
         ComponentArgDescriptor(
@@ -93,14 +93,16 @@ _ultralytics_detector_descriptor = ComponentDescriptor(
             option_type=str,
             required=True,
             default=None,
-            choices={
-                Choice.from_string("YOLO"),
-                Choice.from_string("SAM"),
-                Choice.from_string("FastSAM"),
-                Choice.from_string("YOLO_NAS"),
-                Choice.from_string("RT_DETR"),
-                Choice.from_string("YOLO_WORLD"),
-            },
+            choices=frozenset(
+                (
+                    Choice.from_string("YOLO"),
+                    Choice.from_string("SAM"),
+                    Choice.from_string("FastSAM"),
+                    Choice.from_string("YOLO_NAS"),
+                    Choice.from_string("RT_DETR"),
+                    Choice.from_string("YOLO_WORLD"),
+                )
+            ),
         ),
         ComponentArgDescriptor(
             display_name="Model Path",

@@ -1,12 +1,11 @@
 import dataclasses
-from abc import abstractmethod
 from collections.abc import Sequence
 from enum import Enum
 from typing import Any, Callable, Optional, Protocol, Self
 
 from sentinel_core.alert import Subscriber
 from sentinel_core.video import AsyncVideoStream, SyncVideoStream
-from sentinel_core.video.detect import Detector
+from sentinel_core.video.detect import AsyncDetector, SyncDetector
 
 
 @dataclasses.dataclass(frozen=True)
@@ -26,20 +25,21 @@ class ComponentArgDescriptor[T]:
     option_type: T
     required: bool
     default: Optional[T] = None
-    choices: Optional[set[Choice]] = None
+    choices: Optional[frozenset[Choice]] = None
     validator: Optional[Callable[[T], Optional[str]]] = None
 
 
 class ComponentKind(Enum):
     AsyncVideoStream = 0
     SyncVideoStream = 1
-    Detector = 2
-    Subscriber = 3
+    AsyncDetector = 2
+    SyncDetector = 3
+    Subscriber = 4
 
 
 @dataclasses.dataclass(frozen=True)
 class ComponentDescriptor[
-    T: AsyncVideoStream | SyncVideoStream | Detector | Subscriber
+    T: AsyncVideoStream | SyncVideoStream | AsyncDetector | SyncDetector | Subscriber
 ]:
     display_name: str
     kind: ComponentKind

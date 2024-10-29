@@ -1,15 +1,11 @@
-import asyncio
-import typing
-from asyncio import Future
-from collections.abc import Sequence
-from dataclasses import dataclass
-from typing import Optional, Protocol, Self
-
 import cv2
 import numpy as np
+from typing import Self
 from aioreactive import AsyncObservable, AsyncObserver, AsyncSubject
 from sentinel_core.video import Frame
-from sentinel_core.video.detect import DetectionResult, Detector
+from sentinel_core.video.detect import AsyncDetector, DetectionResult, SyncDetector
+
+import sentinel_server.tasks
 
 
 def visualise_detections(detection_result: DetectionResult) -> Frame:
@@ -72,9 +68,14 @@ class DetectionResultVisualiser(AsyncObservable[Frame], AsyncObserver[DetectionR
 
 
 class ReactiveDetector(AsyncObservable[DetectionResult], AsyncObserver[Frame]):
-    def __init__(self, raw_detector: Detector):
-        self._raw_detector: Detector = raw_detector
+    def __init__(self, raw_detector: AsyncDetector):
+        self._raw_detector: AsyncDetector = raw_detector
         self._subject_out: AsyncSubject[DetectionResult] = AsyncSubject()
+
+    @classmethod
+    def from_sync_detector(cls, raw_detector: SyncDetector) -> Self:
+        async_detector = AsyncDetectorWrapper(raw_detector)
+        return cls(async_detector)
 
     async def subscribe_async(self, observer):
         return await self._subject_out.subscribe_async(observer)
@@ -88,3 +89,17 @@ class ReactiveDetector(AsyncObservable[DetectionResult], AsyncObserver[Frame]):
 
     async def aclose(self):
         await self._subject_out.aclose()
+
+
+class AsyncDetectorWrapper(AsyncDetector):
+    """
+    A wrapper around a synchronous detector to make it asynchronous.
+    """
+
+    def __init__(self, sync_detector: SyncDetector):
+        self._sync_detector: SyncDetector = sync_detector
+
+    async def detect(self, frame: Frame) -> DetectionResult:
+        return await sentinel_server.tasks.run_in_thread(
+            self._sync_detector.detect, frame
+        )
