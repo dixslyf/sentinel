@@ -32,28 +32,35 @@ class CameraTable:
             "label": "ID",
             "field": "id",
             "required": True,
-            "align": "middle",
+            "align": "left",  
         },
-        {"name": "name", "label": "Name", "field": "name"},
+        {"name": "name", 
+        "label": "Name", 
+        "field": "name", 
+        "align": "left",
+        # "headerClasses": "border-l-2 "
+        },
         {
             "name": "vidstream_plugin_component",
             "label": "Video Stream Plugin / Component",
             "field": "vidstream_plugin_component",
+            "align": "left",
         },
         {
             "name": "detector_plugin_component",
             "label": "Detector Plugin / Component",
             "field": "detector_plugin_component",
+            "align": "left",
         },
-        {"name": "status", "label": "Status", "field": "status"},
-        {"name": "enabled", "label": "Enabled", "field": "enabled"},
+        {"name": "status", "label": "Status", "field": "status", "align": "left",},
+        {"name": "enabled", "label": "Enabled", "field": "enabled", "align": "middle",},
         {"name": "view", "label": "", "field": "view"},
     ]
 
     def __init__(self) -> None:
         self.table = ui.table(columns=CameraTable.columns, rows=[], row_key="id").props(
             "loading"
-        )
+        ).classes("camera_table w-11/12 border-2 border-gray-100").props("table-header-style='background-color: #f0f0f0'").props("flat")
 
         # Enabled checkbox.
         self.table.add_slot(
@@ -153,37 +160,40 @@ class AddCameraDialog:
         # Same as the above but for detectors.
         self.detector_inputs: dict[str, Input | Select] = {}
 
-        with self.dialog, ui.card():
-            ui.label("Add Camera")
+        with self.dialog, ui.card().classes("dialog-popup w-1/5"):
+            with ui.element("div").classes("w-full flex justify-between"):
+                ui.label("Add Camera").classes("flex items-center text-xl bold")
+                # close button 
+                with ui.button(on_click=self.close).props("flat").classes("w-10"):
+                    ui.icon("close").classes("text-gray-400")
 
             # Name of the video source.
-            self.name_input = ui.input(label="Name")
+            self.name_input = ui.input(label="Name").classes("w-full")
 
             # Selection box for the video stream component.
-            self.vidstream_select = ui.select({}, label="Video stream type")
+            self.vidstream_select = ui.select({}, label="Video stream type").classes("w-full")
 
             # Section containing inputs for configuration specific
             # to the video stream component and plugin.
-            self.vidstream_section = ui.element("div")
+            self.vidstream_section = ui.element("div").classes("w-full")
 
             # Update the form to show configuration inputs for
             # the currently selected video stream component.
             self.vidstream_select.on_value_change(self._update_vidstream_config_inputs)
 
             # Selection box for the detector component.
-            self.detector_select = ui.select({}, label="Detector type")
+            self.detector_select = ui.select({}, label="Detector type").classes("w-full")
 
             # Section containing inputs for configuration specific
             # to the detector component and plugin.
-            self.detector_section = ui.element("div")
+            self.detector_section = ui.element("div").classes("w-full")
 
             # Update the form to show configuration inputs for
             # the currently selected detector component.
             self.detector_select.on_value_change(self._update_detector_config_inputs)
 
-            with ui.grid(columns=2):
-                ui.button("Close", on_click=self.close)
-                ui.button("Finish", on_click=self._on_finish)
+            with ui.element("div").classes("w-full flex justify-end"):
+                ui.button("Finish", on_click=self._on_finish).classes("text-white bg-black")
 
     async def open(self):
         """Opens the dialog."""
@@ -304,14 +314,17 @@ async def cameras_page() -> None:
     sentinel_server.ui.add_global_style()
     sentinel_server.ui.pages_shared()
 
-    ui.label("Cameras")
+    # ui design for cameras page
+    with ui.element("div").classes("camera_wrapper w-full flex flex-col gap-5 justify-center text-center mt-10"):
+        
+        with ui.element("div").classes("flex justify-center text-center"):
+            table = CameraTable()
 
-    table = CameraTable()
+            dialog = AddCameraDialog(table)
 
-    dialog = AddCameraDialog(table)
-
-    with ui.row():
-        ui.button("Add", on_click=dialog.open)
+        with ui.element("div").classes("w-full flex justify-center"):
+            with ui.element("div").classes("w-11/12 flex justify-end"):
+                ui.button("Add", on_click=dialog.open).classes("bg-black rounded-xl py-1 px-3").props("no-caps")
 
     # Wait for the page to load before refreshing the table.
     await ui.context.client.connected()
@@ -367,9 +380,17 @@ async def camera_view_page(id: int) -> None:
     sentinel_server.ui.add_global_style()
     sentinel_server.ui.pages_shared()
 
-    ui.label(f"camera {id}")
+    with ui.element("div").classes("w-full flex h-3/5"):
+        with ui.element("div").classes("w-4/5 border-2 border-red-400"):
+            ui.label(f"camera {id}")
 
-    camera_view = CameraView(id)
+            camera_view = CameraView(id)
+        
+        with ui.element("div").classes("w-1/5 border-2 border-blue-400"):
+            ui.label("Camera details")
+    
+    with ui.element("div").classes("w-full border-2 border-purple-400"):
+        ui.label("Logs here")
 
     await ui.context.client.connected()
     await camera_view.start_capture()
