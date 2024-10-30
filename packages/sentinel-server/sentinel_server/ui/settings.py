@@ -8,7 +8,6 @@ from nicegui.events import GenericEventArguments
 import sentinel_server.auth
 import sentinel_server.globals
 import sentinel_server.ui
-from sentinel_server.ui.login import logout_user
 from sentinel_server.ui.utils import ConfirmationDialog
 
 logger = logging.getLogger(__name__)
@@ -201,8 +200,9 @@ class SystemSection:
                 ui.button("Shutdown", on_click=shutdown_confirm_dialog.open)
 
     def _restart(self, button: nicegui.elements.button.Button) -> None:
-        # Log the user out.
-        logout_user()
+        # Log the user out, but don't explicitly redirect to the login page.
+        # Once the restart is done, NiceGUI should automatically redirect to the login page.
+        app.storage.user.update({"authenticated": False})
 
         # As suggested by:
         # https://github.com/zauberzeug/nicegui/discussions/1719#discussioncomment-7159050.
