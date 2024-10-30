@@ -6,7 +6,6 @@ from nicegui.elements.input import Input
 from nicegui.elements.select import Select
 from nicegui.events import GenericEventArguments, ValueChangeEventArguments
 
-import sentinel_server.globals
 import sentinel_server.tasks
 import sentinel_server.ui
 

@@ -11,7 +11,7 @@ from tortoise import Tortoise
 
 import sentinel_server.auth
 import sentinel_server.config
-import sentinel_server.globals
+import sentinel_server.globals as globals
 import sentinel_server.ui.alerts
 import sentinel_server.ui.cameras
 import sentinel_server.ui.dashboard
@@ -49,11 +49,11 @@ async def setup():
     )
 
     # Load configuration.
-    await sentinel_server.globals.init_config()
+    await globals.init_config()
 
     # Initialise database.
     await Tortoise.init(
-        db_url=sentinel_server.globals.config.db_url,
+        db_url=globals.config.db_url,
         modules={"models": ["sentinel_server.models"]},
     )
     await Tortoise.generate_schemas(safe=True)
@@ -62,13 +62,13 @@ async def setup():
     await sentinel_server.auth.ensure_one_user()
 
     # Discover and load plugins.
-    sentinel_server.globals.init_plugin_manager()
-    await run.io_bound(sentinel_server.globals.plugin_manager.init_plugins)
-    sentinel_server.globals.plugins_loaded.set()
+    globals.init_plugin_manager()
+    await run.io_bound(globals.plugin_manager.init_plugins)
+    globals.plugins_loaded.set()
 
-    sentinel_server.globals.init_video_source_manager()
-    await sentinel_server.globals.video_source_manager.load_video_sources_from_db()
-    sentinel_server.globals.video_source_manager_loaded_from_db.set()
+    globals.init_video_source_manager()
+    await globals.video_source_manager.load_video_sources_from_db()
+    globals.video_source_manager_loaded_from_db.set()
 
     logging.info("Sentinel started")
 

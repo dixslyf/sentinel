@@ -6,7 +6,7 @@ from nicegui import APIRouter, app, run, ui
 from nicegui.events import GenericEventArguments
 
 import sentinel_server.auth
-import sentinel_server.globals
+import sentinel_server.globals as globals
 import sentinel_server.ui
 from sentinel_server.ui.utils import ConfirmationDialog
 
@@ -56,9 +56,9 @@ class PluginTable:
         row_idx = msg.args["rowIndex"]
         enabled = msg.args["row"]["enabled"]
 
-        await sentinel_server.globals.plugin_manager_loaded.wait()
-        await sentinel_server.globals.plugins_loaded.wait()
-        plugin_manager = sentinel_server.globals.plugin_manager
+        await globals.plugin_manager_loaded.wait()
+        await globals.plugins_loaded.wait()
+        plugin_manager = globals.plugin_manager
         if enabled:
             await run.io_bound(plugin_manager.add_to_whitelist, row_idx)
         else:
@@ -75,10 +75,10 @@ class PluginTable:
         self.table.update()
 
         # Wait for the plugin manager to be initialised.
-        await sentinel_server.globals.plugin_manager_loaded.wait()
-        await sentinel_server.globals.plugins_loaded.wait()
+        await globals.plugin_manager_loaded.wait()
+        await globals.plugins_loaded.wait()
 
-        plugin_manager = sentinel_server.globals.plugin_manager
+        plugin_manager = globals.plugin_manager
 
         for plugin_desc in plugin_manager.plugin_descriptors:
             self.table.add_row(
@@ -94,9 +94,9 @@ class PluginTable:
         await self.refresh_dirty_message()
 
     async def refresh_dirty_message(self) -> None:
-        await sentinel_server.globals.plugin_manager_loaded.wait()
-        await sentinel_server.globals.plugins_loaded.wait()
-        plugin_manager = sentinel_server.globals.plugin_manager
+        await globals.plugin_manager_loaded.wait()
+        await globals.plugins_loaded.wait()
+        plugin_manager = globals.plugin_manager
         self.dirty_msg.visible = plugin_manager.is_dirty
 
 

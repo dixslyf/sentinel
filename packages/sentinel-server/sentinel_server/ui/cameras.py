@@ -8,7 +8,7 @@ from nicegui.elements.select import Select
 from nicegui.events import GenericEventArguments, ValueChangeEventArguments
 from PIL import Image
 
-import sentinel_server.globals
+import sentinel_server.globals as globals
 import sentinel_server.tasks
 import sentinel_server.ui
 from sentinel_server.video import Frame
@@ -101,7 +101,7 @@ class CameraTable:
         id = msg.args["id"]
         enabled = msg.args["enabled"]
 
-        vid_src_manager = sentinel_server.globals.video_source_manager
+        vid_src_manager = globals.video_source_manager
         if enabled:
             await vid_src_manager.enable_video_source(id)
         else:
@@ -123,10 +123,10 @@ class CameraTable:
         # but, during development, hot-reloading can cause the table to try to refresh
         # before the video source manager has been initialised or before it has loaded
         # the video sources.
-        await sentinel_server.globals.video_source_manager_loaded.wait()
-        await sentinel_server.globals.video_source_manager_loaded_from_db.wait()
+        await globals.video_source_manager_loaded.wait()
+        await globals.video_source_manager_loaded_from_db.wait()
 
-        vid_src_manager = sentinel_server.globals.video_source_manager
+        vid_src_manager = globals.video_source_manager
 
         for _, vid_src in vid_src_manager.video_sources.items():
             self.table.add_row(
@@ -228,8 +228,8 @@ class AddCameraDialog:
 
     async def _update_vidstream_select_options(self) -> None:
         """Updates the options for the dropdown selection box for the video stream component."""
-        await sentinel_server.globals.video_source_manager_loaded.wait()
-        vid_src_manager = sentinel_server.globals.video_source_manager
+        await globals.video_source_manager_loaded.wait()
+        vid_src_manager = globals.video_source_manager
         available_vidstream_comps = vid_src_manager.available_vidstream_components()
 
         self.vidstream_select.set_options(
@@ -238,8 +238,8 @@ class AddCameraDialog:
 
     async def _update_detector_select_options(self) -> None:
         """Updates the options for the dropdown selection box for the detector component."""
-        await sentinel_server.globals.video_source_manager_loaded.wait()
-        vid_src_manager = sentinel_server.globals.video_source_manager
+        await globals.video_source_manager_loaded.wait()
+        vid_src_manager = globals.video_source_manager
         available_detector_comps = vid_src_manager.available_detector_components()
 
         self.detector_select.set_options(
@@ -315,7 +315,7 @@ class AddCameraDialog:
         detector_comp = self.detector_select.value
 
         try:
-            vid_src_manager = sentinel_server.globals.video_source_manager
+            vid_src_manager = globals.video_source_manager
             await vid_src_manager.add_video_source(
                 self.name_input.value,
                 vidstream_comp,
@@ -365,26 +365,22 @@ class CameraView(AsyncObserver[Frame]):
         self.sub: Optional[AsyncDisposable] = None
 
     async def start_capture(self):
-        await sentinel_server.globals.video_source_manager_loaded.wait()
-        await sentinel_server.globals.video_source_manager_loaded_from_db.wait()
+        await globals.video_source_manager_loaded.wait()
+        await globals.video_source_manager_loaded_from_db.wait()
 
-        await sentinel_server.globals.video_source_manager.subscribe_to(
-            self.id, self.visualiser
-        )
+        await globals.video_source_manager.subscribe_to(self.id, self.visualiser)
 
         self.sub = await self.visualiser.subscribe_async(self)
 
-        vid_src = sentinel_server.globals.video_source_manager.video_sources[self.id]
+        vid_src = globals.video_source_manager.video_sources[self.id]
         logger.info(f'Started displaying frames for "{vid_src.name}" (id: {self.id})')
 
     async def stop_capture(self):
-        await sentinel_server.globals.video_source_manager.unsubscribe_from(
-            self.id, self.visualiser
-        )
+        await globals.video_source_manager.unsubscribe_from(self.id, self.visualiser)
 
         await self.sub.dispose_async()
 
-        vid_src = sentinel_server.globals.video_source_manager.video_sources[self.id]
+        vid_src = globals.video_source_manager.video_sources[self.id]
         logger.info(f'Stopped displaying frames for "{vid_src.name}" (id: {self.id})')
 
     async def asend(self, frame: Frame):
