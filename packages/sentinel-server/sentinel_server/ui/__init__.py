@@ -76,4 +76,4 @@ def pages_shared():
                 "flex items-center gap-3 text-xl text-gray-200"
             ):
                 ui.icon("settings")
-                ui.label("Setting")
+                ui.label("Settings")
