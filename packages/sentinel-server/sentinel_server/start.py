@@ -2,6 +2,7 @@ import logging
 import os
 import secrets
 import sys
+from argparse import ArgumentParser, Namespace
 
 import platformdirs
 from fastapi.responses import RedirectResponse
@@ -82,12 +83,25 @@ def index():
     return RedirectResponse("/login")
 
 
+def parse_args() -> Namespace:
+    parser = ArgumentParser(prog="sentinel-server")
+    parser.add_argument(
+        "-p", "--port", type=int, default=8080, help="the port for the web UI"
+    )
+    return parser.parse_args()
+
+
 def entry() -> None:
+    args = parse_args()
+
     app.add_middleware(sentinel_server.ui.login.AuthenticationMiddleware)
     app.on_startup(setup)
     app.on_shutdown(shutdown)
     ui.run(
-        title="Sentinel", storage_secret=secrets.token_urlsafe(nbytes=256), reload=True
+        title="Sentinel",
+        port=args.port,
+        storage_secret=secrets.token_urlsafe(nbytes=256),
+        reload=True,
     )
 
 
