@@ -1,3 +1,4 @@
+import time
 from typing import Self
 
 import cv2
@@ -71,8 +72,11 @@ class ReactiveDetectionVisualiser(
 
 
 class ReactiveDetector(AsyncObservable[DetectionResult], AsyncObserver[Frame]):
-    def __init__(self, raw_detector: AsyncDetector):
+    def __init__(self, raw_detector: AsyncDetector, interval: float = 1):
         self._raw_detector: AsyncDetector = raw_detector
+        self._time_last: float = 0
+        self._interval: float = interval
+
         self._subject_out: AsyncSubject[DetectionResult] = AsyncSubject()
 
     @classmethod
@@ -84,7 +88,13 @@ class ReactiveDetector(AsyncObservable[DetectionResult], AsyncObserver[Frame]):
         return await self._subject_out.subscribe_async(observer)
 
     async def asend(self, frame: Frame):
-        detection_result = await self._raw_detector.detect(frame)
+        cur_time = time.time()
+        if cur_time >= self._time_last + self._interval:
+            self._time_last = cur_time
+            detection_result = await self._raw_detector.detect(frame)
+        else:
+            # Create dummy detection result.
+            detection_result = DetectionResult(cur_time, frame, [])
         await self._subject_out.asend(detection_result)
 
     async def athrow(self, error: Exception):
