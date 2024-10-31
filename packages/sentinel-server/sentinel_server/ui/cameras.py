@@ -378,9 +378,7 @@ class CameraView(AsyncObserver[Frame]):
         logger.info(f'Stopped displaying frames for "{vid_src.name}" (id: {self.id})')
 
     async def asend(self, frame: Frame):
-        pil_image = await sentinel_server.tasks.run_in_process(
-            Image.fromarray, frame.data
-        )
+        pil_image = Image.fromarray(frame.data)
         self.image.set_source(pil_image)
 
     async def athrow(self, error):
