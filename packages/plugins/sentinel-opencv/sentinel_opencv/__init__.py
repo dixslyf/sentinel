@@ -16,8 +16,9 @@ class OpenCVVideoStream(SyncVideoStream):
     An OpenCV raw video stream.
     """
 
-    def __init__(self, source: int | str):
+    def __init__(self, source: int | str, buffer_size: int = 1):
         self._capture: cv2.VideoCapture = cv2.VideoCapture(source)
+        self._capture.set(cv2.CAP_PROP_BUFFERSIZE, buffer_size)
 
     def next_frame(self) -> Optional[Frame]:
         has_next: bool
