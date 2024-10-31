@@ -1,11 +1,14 @@
 import asyncio
 import dataclasses
 import logging
+import math
 import typing
+from asyncio import Queue
 from enum import Enum
 from typing import Any, Optional, Self
 
 from aioreactive import AsyncDisposable, AsyncObservable, AsyncObserver, AsyncSubject
+from sentinel_core.alert import Alert, Emitter
 from sentinel_core.plugins import ComponentDescriptor, ComponentKind
 from sentinel_core.video import (
     AsyncVideoStream,
@@ -13,8 +16,11 @@ from sentinel_core.video import (
     SyncVideoStream,
     VideoStreamNoDataException,
 )
+from sentinel_core.video.detect import DetectionResult
 
+import sentinel_server.globals as globals
 import sentinel_server.tasks
+from sentinel_server.alert import AlertManager, Emitter
 from sentinel_server.models import VideoSource as DbVideoSource
 from sentinel_server.plugins import PluginDescriptor, PluginManager
 from sentinel_server.video.detect import DetectionResult, ReactiveDetector
@@ -95,6 +101,7 @@ class VideoSource:
     detector_component: Optional[ComponentDescriptor] = None
     detector: Optional[ReactiveDetector] = None
     detector_sub: Optional[AsyncDisposable] = None
+    emitter: Optional[Emitter] = None
 
     task: Optional[asyncio.Task] = None
 
@@ -139,9 +146,63 @@ class VideoSource:
         return detector_config
 
 
+class VideoSourceAlertEmitter(Emitter, AsyncObserver[DetectionResult]):
+    def __init__(self, vid_src: VideoSource):
+        if vid_src.detector is None:
+            raise ValueError("Video source does not have a detector")
+
+        self._vid_src = vid_src
+        self._queue: Queue = Queue()
+
+        # Delayed initialisation in `create()`.
+        self._sub: Optional[AsyncDisposable] = None
+
+    @classmethod
+    async def create(cls, vid_src: VideoSource) -> Self:
+        self = cls(vid_src)
+
+        assert self._vid_src.detector is not None
+        self._sub = await self._vid_src.detector.subscribe_async(self)
+
+        return self
+
+    async def next_alert(self) -> Alert:
+        alert = await self._queue.get()
+        self._queue.task_done()
+        return alert
+
+    async def asend(self, dr: DetectionResult) -> None:
+        if not dr.detections:
+            return
+
+        objects: list[str] = []
+        for detection in dr.detections:
+            # Choose the most likely object category.
+            object_cat = max(
+                detection.pred_categories,
+                key=lambda cat: cat.score if cat.score is not None else -math.inf,
+            )
+            objects.append(object_cat.name)
+
+        desc: str = f"Detected: {", ".join(objects)}"
+        alert = Alert("Camera Alert", desc, self._vid_src.name)
+        await self._queue.put(alert)
+
+    async def athrow(self, error: Exception):
+        raise error
+
+    async def aclose(self):
+        pass
+
+
 class VideoSourceManager:
-    def __init__(self, plugin_manager: PluginManager) -> None:
+    def __init__(
+        self,
+        plugin_manager: PluginManager,
+        alert_manager: AlertManager,
+    ) -> None:
         self._plugin_manager: PluginManager = plugin_manager
+        self._alert_manager: AlertManager = alert_manager
         self._video_sources: dict[int, VideoSource] = {}
 
     async def load_video_sources_from_db(self) -> None:
@@ -279,6 +340,11 @@ class VideoSourceManager:
         for observer in vid_src.subscribers.keys():
             await self.subscribe_to(id, observer)
 
+        # Create and register the emitter.
+        emitter = await VideoSourceAlertEmitter.create(vid_src)
+        vid_src.emitter = emitter
+        await self._alert_manager.add_emitter(emitter)
+
     async def disable_video_source(self, id: int) -> None:
         vid_src = self._video_sources[id]
 
@@ -295,6 +361,11 @@ class VideoSourceManager:
 
         await self._stop_detector(id)
         self._stop_video_stream(id)
+
+        # Unregister and delete the emitter.
+        if vid_src.emitter is not None:
+            await self._alert_manager.remove_emitter(vid_src.emitter)
+            vid_src.emitter = None
 
     async def subscribe_to(
         self, id: int, observer: AsyncObserver[DetectionResult]

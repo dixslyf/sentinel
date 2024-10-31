@@ -66,6 +66,8 @@ async def setup():
     await run.io_bound(globals.plugin_manager.init_plugins)
     globals.plugins_loaded.set()
 
+    await globals.init_alert_manager()
+
     globals.init_video_source_manager()
     await globals.video_source_manager.load_video_sources_from_db()
     globals.video_source_manager_loaded_from_db.set()

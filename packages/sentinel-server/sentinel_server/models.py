@@ -28,3 +28,15 @@ class VideoSource(Model):
     detector_plugin_name = fields.CharField(max_length=255)
     detector_component_name = fields.CharField(max_length=255)
     detector_config = fields.JSONField()
+
+
+class Alert(Model):
+    """
+    Represents an alert.
+    """
+
+    id = fields.IntField(pk=True)
+    header = fields.CharField(max_length=256)
+    description = fields.CharField(max_length=2048)
+    source = fields.CharField(max_length=255)
+    timestamp = fields.DatetimeField(auto_now=True)
