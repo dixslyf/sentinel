@@ -152,90 +152,10 @@ class VideoSourceManager:
             )
             self._video_sources[vid_src.id] = vid_src
 
-            # Find the video stream plugin.
-            vid_src.vidstream_plugin_desc = (
-                self._plugin_manager.find_plugin_desc_by_name(
-                    db_vid_src.vidstream_plugin_name
-                )
-            )
-
-            # If we can't find the plugin, then we just set the status to error.
-            if vid_src.vidstream_plugin_desc is None:
-                vid_src.status = VideoSourceStatus.Error
-                logger.info(
-                    f'Recreated video source from database for "{db_vid_src.name}" (id: {db_vid_src.id})'
-                    "but could not find video stream plugin"
-                )
+            if not self._initialise_plugin_component(vid_src, "vidstream"):
                 continue
 
-            # If the plugin isn't loaded (i.e., it is not part of the whitelist),
-            # then we set error as well.
-            if vid_src.vidstream_plugin_desc.plugin is None:
-                vid_src.status = VideoSourceStatus.Error
-                logger.info(
-                    f'Recreated video source from database for "{db_vid_src.name}" (id: {db_vid_src.id})'
-                    "but video stream plugin is not loaded"
-                )
-                continue
-
-            # Find the video stream component.
-            vid_src.vidstream_component = (
-                vid_src.vidstream_plugin_desc.plugin.find_component_by_name(
-                    db_vid_src.vidstream_component_name
-                )
-            )
-
-            # Likewise, if we can't find the video stream component,
-            # then we just set the status to error.
-            if vid_src.vidstream_component is None:
-                vid_src.status = VideoSourceStatus.Error
-                logger.info(
-                    f'Recreated video source from database for "{db_vid_src.name}" (id: {db_vid_src.id})'
-                    "but could not find video stream component"
-                )
-                continue
-
-            # Find the detector plugin.
-            vid_src.detector_plugin_desc = (
-                self._plugin_manager.find_plugin_desc_by_name(
-                    db_vid_src.detector_plugin_name
-                )
-            )
-
-            # If we can't find the plugin, then we just set the status to error.
-            if vid_src.detector_plugin_desc is None:
-                vid_src.status = VideoSourceStatus.Error
-                logger.info(
-                    f'Recreated video source from database for "{db_vid_src.name}" (id: {db_vid_src.id})'
-                    "but could not find detector plugin"
-                )
-                continue
-
-            # If the plugin isn't loaded (i.e., it is not part of the whitelist),
-            # then we set error as well.
-            if vid_src.detector_plugin_desc.plugin is None:
-                vid_src.status = VideoSourceStatus.Error
-                logger.info(
-                    f'Recreated video source from database for "{db_vid_src.name}" (id: {db_vid_src.id})'
-                    "but detector plugin is not loaded"
-                )
-                continue
-
-            # Find the video stream component.
-            vid_src.detector_component = (
-                vid_src.detector_plugin_desc.plugin.find_component_by_name(
-                    db_vid_src.detector_component_name
-                )
-            )
-
-            # Likewise, if we can't find the detector component,
-            # then we just set the status to error.
-            if vid_src.detector_component is None:
-                vid_src.status = VideoSourceStatus.Error
-                logger.info(
-                    f'Recreated video source from database for "{db_vid_src.name}" (id: {db_vid_src.id})'
-                    "but could not find detector component"
-                )
+            if not self._initialise_plugin_component(vid_src, "detector"):
                 continue
 
             logger.info(
@@ -254,43 +174,31 @@ class VideoSourceManager:
         detector_comp: ComponentDescriptor,
         detector_config: dict[str, Any],
     ) -> None:
-        assert (
-            vidstream_comp.kind == ComponentKind.AsyncVideoStream
-            or vidstream_comp.kind == ComponentKind.SyncVideoStream
-        )
+        assert vidstream_comp.kind in {
+            ComponentKind.AsyncVideoStream,
+            ComponentKind.SyncVideoStream,
+        }
 
-        assert (
-            detector_comp.kind == ComponentKind.AsyncDetector
-            or detector_comp.kind == ComponentKind.SyncDetector
-        )
+        assert detector_comp.kind in {
+            ComponentKind.AsyncDetector,
+            ComponentKind.SyncDetector,
+        }
 
         # Find the plugin for the video stream component.
-        vidstream_plugin_desc = next(
-            (
-                plugin_desc
-                for plugin_desc in self._plugin_manager.plugin_descriptors
-                if plugin_desc.plugin is not None
-                for plugin_comp in plugin_desc.plugin.components
-                if plugin_comp is vidstream_comp
-            ),
-            None,
+        _, vidstream_plugin_desc = self._plugin_manager.find_component(
+            lambda comp: comp is vidstream_comp
         )
+
         if vidstream_plugin_desc is None:
             raise ValueError(
                 "Failed to find corresponding plugin for video stream component."
             )
 
         # Find the plugin for the detector component.
-        detector_plugin_desc = next(
-            (
-                plugin_desc
-                for plugin_desc in self._plugin_manager.plugin_descriptors
-                if plugin_desc.plugin is not None
-                for plugin_comp in plugin_desc.plugin.components
-                if plugin_comp is detector_comp
-            ),
-            None,
+        _, detector_plugin_desc = self._plugin_manager.find_component(
+            lambda comp: comp is detector_comp
         )
+
         if detector_plugin_desc is None:
             raise ValueError(
                 "Failed to find corresponding plugin for detector component."
@@ -331,8 +239,8 @@ class VideoSourceManager:
             for plugin_desc in self._plugin_manager.plugin_descriptors
             if plugin_desc.plugin is not None
             for component in plugin_desc.plugin.components
-            if component.kind == ComponentKind.AsyncVideoStream
-            or component.kind == ComponentKind.SyncVideoStream
+            if component.kind
+            in {ComponentKind.AsyncVideoStream, ComponentKind.SyncVideoStream}
         ]
 
     def available_detector_components(self) -> list[ComponentDescriptor]:
@@ -344,8 +252,8 @@ class VideoSourceManager:
             for plugin_desc in self._plugin_manager.plugin_descriptors
             if plugin_desc.plugin is not None
             for component in plugin_desc.plugin.components
-            if component.kind == ComponentKind.AsyncDetector
-            or component.kind == ComponentKind.SyncDetector
+            if component.kind
+            in {ComponentKind.AsyncDetector, ComponentKind.SyncDetector}
         ]
 
     @property
@@ -416,6 +324,45 @@ class VideoSourceManager:
         logger.info(
             f'Subscription removed from "{vid_src.name}" (id: {id}) {"(hard)" if _hard else ""}'
         )
+
+    def _initialise_plugin_component(
+        self, vid_src: VideoSource, component_type: str
+    ) -> bool:
+        assert component_type == "vidstream" or component_type == "detector"
+        component_type_display = (
+            "video stream" if component_type == "vidstream" else "detector"
+        )
+
+        db_info: DbVideoSource = vid_src.db_info
+
+        plugin_name = getattr(db_info, f"{component_type}_plugin_name")
+        component_name = getattr(db_info, f"{component_type}_component_name")
+
+        plugin_desc = self._plugin_manager.find_plugin_desc(
+            lambda plugin_desc: plugin_desc.name == plugin_name
+        )
+        if plugin_desc is None or plugin_desc.plugin is None:
+            vid_src.status = VideoSourceStatus.Error
+            logger.info(
+                f'Recreated video source from database for "{db_info.name}" (id: {db_info.id})'
+                f"but could not find or load {component_type_display} plugin"
+            )
+            return False
+
+        component = plugin_desc.plugin.find_component(
+            lambda comp: comp.display_name == component_name
+        )
+        if component is None:
+            vid_src.status = VideoSourceStatus.Error
+            logger.info(
+                f'Recreated video source from database for "{db_info.name}" (id: {db_info.id})'
+                f"but could not find {component_type_display} component"
+            )
+            return False
+
+        setattr(vid_src, f"{component_type}_plugin_desc", plugin_desc)
+        setattr(vid_src, f"{component_type}_component", component)
+        return True
 
     def _start_video_stream(self, id: int) -> bool:
         vid_src = self._video_sources[id]

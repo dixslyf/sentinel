@@ -1,7 +1,6 @@
 import dataclasses
-from collections.abc import Sequence
 from enum import Enum
-from typing import Any, Callable, Optional, Protocol, Self
+from typing import Any, Callable, Optional, Self
 
 from sentinel_core.alert import Subscriber
 from sentinel_core.video import AsyncVideoStream, SyncVideoStream
@@ -48,15 +47,14 @@ class ComponentDescriptor[
     args_transform: Optional[Callable[[dict[str, Any]], dict[str, Any]]] = None
 
 
-class Plugin(Protocol):
-    components: Sequence[ComponentDescriptor]
+@dataclasses.dataclass(frozen=True)
+class Plugin:
+    components: frozenset[ComponentDescriptor]
 
-    @classmethod
-    def find_component_by_name(cls, name: str) -> Optional[ComponentDescriptor]:
-        """
-        Finds the first component with the given display name.
-        """
+    def find_component(
+        self, predicate: Callable[[ComponentDescriptor], bool]
+    ) -> Optional[ComponentDescriptor]:
         return next(
-            (comp for comp in cls.components if comp.display_name == name),
+            (comp for comp in self.components if predicate(comp)),
             None,
         )

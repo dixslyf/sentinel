@@ -3,9 +3,9 @@ import logging
 from collections.abc import Collection
 from dataclasses import dataclass
 from importlib.metadata import EntryPoint, EntryPoints
-from typing import Optional
+from typing import Callable, Optional
 
-from sentinel_core.plugins import Plugin
+from sentinel_core.plugins import ComponentDescriptor, Plugin
 
 import sentinel_server.globals as globals
 
@@ -78,17 +78,42 @@ class PluginManager:
 
         self._is_dirty = True
 
-    def find_plugin_desc_by_name(self, name: str) -> Optional[PluginDescriptor]:
-        """
-        Finds the first plugin descriptor matching the given name.
-        """
+    def find_plugin_desc(
+        self, predicate: Callable[[PluginDescriptor], bool]
+    ) -> Optional[PluginDescriptor]:
         return next(
             (
                 plugin_desc
                 for plugin_desc in self.plugin_descriptors
-                if plugin_desc.name == name
+                if predicate(plugin_desc)
             ),
             None,
+        )
+
+    def find_plugin(
+        self, predicate: Callable[[Plugin], bool]
+    ) -> tuple[Optional[Plugin], Optional[PluginDescriptor]]:
+        return next(
+            (
+                (plugin_desc.plugin, plugin_desc)
+                for plugin_desc in self.plugin_descriptors
+                if plugin_desc.plugin is not None and predicate(plugin_desc.plugin)
+            ),
+            (None, None),
+        )
+
+    def find_component(
+        self, predicate: Callable[[ComponentDescriptor], bool]
+    ) -> tuple[Optional[ComponentDescriptor], Optional[PluginDescriptor]]:
+        return next(
+            (
+                (component, plugin_desc)
+                for plugin_desc in self.plugin_descriptors
+                if plugin_desc.plugin is not None
+                for component in plugin_desc.plugin.components
+                if predicate(component)
+            ),
+            (None, None),
         )
 
     def _discover_plugins(self) -> EntryPoints:

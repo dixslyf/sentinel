@@ -74,5 +74,4 @@ _opencv_video_stream_descriptor = ComponentDescriptor(
 )
 
 
-class OpenCVPlugin(Plugin):
-    components = [_opencv_video_stream_descriptor]
+plugin = Plugin(frozenset({_opencv_video_stream_descriptor}))

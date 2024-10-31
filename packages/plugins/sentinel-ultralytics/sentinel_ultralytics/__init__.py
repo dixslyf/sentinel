@@ -116,5 +116,4 @@ _ultralytics_detector_descriptor = ComponentDescriptor(
 )
 
 
-class UltralyticsPlugin(Plugin):
-    components = [_ultralytics_detector_descriptor]
+plugin = Plugin(frozenset({_ultralytics_detector_descriptor}))
