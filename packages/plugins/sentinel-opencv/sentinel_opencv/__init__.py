@@ -30,9 +30,7 @@ class OpenCVVideoStream(SyncVideoStream):
 
         _, data = self._capture.retrieve()
 
-        timestamp: float = self._capture.get(cv2.CAP_PROP_POS_MSEC)
-
-        return Frame(timestamp, data)
+        return Frame(data)
 
     def clean_up(self) -> None:
         """
@@ -68,7 +66,6 @@ _opencv_video_stream_descriptor = ComponentDescriptor(
             option_type=str,
             required=True,
             default=None,
-            # TODO: add transform
         ),
     ),
     args_transform=args_transform,

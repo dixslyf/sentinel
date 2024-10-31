@@ -10,11 +10,9 @@ class Frame:
     Stores data about a single video frame.
 
     Attributes:
-        timestamp: The timestamp of the frame in milliseconds.
         data: The frame data as a NumPy `ndarray`.
     """
 
-    timestamp: Optional[float]
     data: np.ndarray
 
 

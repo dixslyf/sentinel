@@ -27,7 +27,6 @@ class Detection:
 
 @dataclass
 class DetectionResult:
-    timestamp: float
     frame: Frame
     detections: Sequence[Detection]
 

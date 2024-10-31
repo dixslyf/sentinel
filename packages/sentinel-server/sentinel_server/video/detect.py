@@ -58,8 +58,8 @@ class ReactiveDetectionVisualiser(
         if not self._inplace:
             # Make a copy of the frame
             frame_data_cp = np.copy(dr.frame.data)
-            frame_cp = Frame(dr.frame.timestamp, frame_data_cp)
-            dr = DetectionResult(dr.timestamp, frame_cp, dr.detections)
+            frame_cp = Frame(frame_data_cp)
+            dr = DetectionResult(frame_cp, dr.detections)
 
         frame = visualise_detections(dr)
         await self._subject_out.asend(frame)
@@ -94,7 +94,7 @@ class ReactiveDetector(AsyncObservable[DetectionResult], AsyncObserver[Frame]):
             detection_result = await self._raw_detector.detect(frame)
         else:
             # Create dummy detection result.
-            detection_result = DetectionResult(cur_time, frame, [])
+            detection_result = DetectionResult(frame, [])
         await self._subject_out.asend(detection_result)
 
     async def athrow(self, error: Exception):

@@ -79,7 +79,7 @@ class UltralyticsDetector(SyncDetector):
                 )
                 detections.append(Detection(pred_categories, bounding_box))
 
-        return DetectionResult(frame.timestamp or -1, frame, detections)
+        return DetectionResult(frame, detections)
 
 
 _ultralytics_detector_descriptor = ComponentDescriptor(
