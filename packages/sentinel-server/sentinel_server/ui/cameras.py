@@ -7,11 +7,12 @@ from nicegui.elements.input import Input
 from nicegui.elements.select import Select
 from nicegui.events import GenericEventArguments, ValueChangeEventArguments
 from PIL import Image
+from sentinel_core.video import Frame
 
 import sentinel_server.globals as globals
 import sentinel_server.tasks
 import sentinel_server.ui
-from sentinel_server.video import Frame
+from sentinel_server.video import VideoSourceStatus
 from sentinel_server.video.detect import ReactiveDetectionVisualiser
 
 logger = logging.getLogger(__name__)
@@ -90,7 +91,7 @@ class CameraTable:
         self.table.add_slot(
             "body-cell-view",
             '<q-td :props="props">\n'
-            + "   <a :href=\"'cameras/' + props.row.id\">View</a>"
+            + "   <a :href=\"'cameras/' + props.row.id\">{{props.row.view}}</a>"
             + "</q-td>",
         )
 
@@ -135,9 +136,11 @@ class CameraTable:
                     "name": vid_src.name,
                     "vidstream_plugin_component": f"{vid_src.vidstream_plugin_name} / {vid_src.vidstream_component_name}",
                     "detector_plugin_component": f"{vid_src.detector_plugin_name} / {vid_src.detector_component_name}",
-                    "status": "Offline",  # TODO: query global video source manager about status
+                    "status": (
+                        "OK" if vid_src.status == VideoSourceStatus.Ok else "Error"
+                    ),
                     "enabled": vid_src.enabled,
-                    "view": vid_src.id,  # TODO: change how this looks
+                    "view": "View",
                 }
             )
 
