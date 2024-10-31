@@ -3,10 +3,12 @@ from typing import Any, Optional
 
 from aioreactive import AsyncDisposable, AsyncObserver
 from nicegui import APIRouter, ui
+from nicegui.element import Element
 from nicegui.elements.input import Input
 from nicegui.elements.select import Select
 from nicegui.events import GenericEventArguments, ValueChangeEventArguments
 from PIL import Image
+from sentinel_core.plugins import ComponentArgDescriptor, ComponentDescriptor
 from sentinel_core.video import Frame
 
 import sentinel_server.globals as globals
@@ -249,55 +251,44 @@ class AddCameraDialog:
             {comp: comp.display_name for comp in available_detector_comps}
         )
 
-    def _update_vidstream_config_inputs(self, args: ValueChangeEventArguments) -> None:
-        """
-        Updates the user interface by dynamically adding input fields
-        for the currently selected video stream component's configuration.
+    @staticmethod
+    def _update_config_inputs(
+        select: Select, section: Element, inputs: dict[str, Input | Select]
+    ) -> None:
+        inputs.clear()
+        section.clear()
 
-        Args:
-            vidstream_select (nicegui.elements.select.Select): The dropdown selection element.
-        """
-        self.vidstream_inputs = {}
-        self.vidstream_section.clear()
-
-        comp = self.vidstream_select.value
-        with self.vidstream_section:
+        comp: ComponentDescriptor = select.value
+        with section:
+            arg: ComponentArgDescriptor
             for arg in comp.args:
                 if arg.choices is None:
                     input = ui.input(label=arg.display_name)
-                    self.vidstream_inputs[arg.arg_name] = input
+                    inputs[arg.arg_name] = input
                 else:
                     select = ui.select(
                         {choice.value: choice.display_name for choice in arg.choices},
                         label=arg.display_name,
                     )
-                    self.vidstream_inputs[arg.arg_name] = select
+                    inputs[arg.arg_name] = select
+
+    def _update_vidstream_config_inputs(self, args: ValueChangeEventArguments) -> None:
+        """
+        Updates the user interface by dynamically adding input fields
+        for the currently selected video stream component's configuration.
+        """
+        self._update_config_inputs(
+            self.vidstream_select, self.vidstream_section, self.vidstream_inputs
+        )
 
     def _update_detector_config_inputs(self, args: ValueChangeEventArguments) -> None:
         """
         Updates the user interface by dynamically adding input fields
         for the currently selected detector component's configuration.
-
-        Args:
-            vidstream_select (nicegui.elements.select.Select): The dropdown selection element.
         """
-        # TODO: Reduce code duplication with the vidstream counterpart.
-
-        self.detector_inputs = {}
-        self.detector_section.clear()
-
-        comp = self.detector_select.value
-        with self.detector_section:
-            for arg in comp.args:
-                if arg.choices is None:
-                    input = ui.input(label=arg.display_name)
-                    self.detector_inputs[arg.arg_name] = input
-                else:
-                    select = ui.select(
-                        {choice.value: choice.display_name for choice in arg.choices},
-                        label=arg.display_name,
-                    )
-                    self.detector_inputs[arg.arg_name] = select
+        self._update_config_inputs(
+            self.detector_select, self.detector_section, self.detector_inputs
+        )
 
     async def _on_finish(self) -> None:
         """
