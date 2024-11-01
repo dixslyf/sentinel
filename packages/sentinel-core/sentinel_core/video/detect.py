@@ -1,10 +1,11 @@
-from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Optional, Protocol
 
+from dataclasses_json import dataclass_json
 from sentinel_core.video import Frame
 
 
+@dataclass_json
 @dataclass
 class BoundingBox:
     x: int
@@ -13,22 +14,25 @@ class BoundingBox:
     height: int
 
 
+@dataclass_json
 @dataclass
 class PredictedCategory:
     name: str
     score: Optional[float]
 
 
+@dataclass_json
 @dataclass
 class Detection:
-    pred_categories: Sequence[PredictedCategory]
+    pred_categories: list[PredictedCategory]
     bounding_box: BoundingBox
 
 
+@dataclass_json
 @dataclass
 class DetectionResult:
     frame: Frame
-    detections: Sequence[Detection]
+    detections: list[Detection]
 
 
 class AsyncDetector(Protocol):

@@ -7,6 +7,7 @@ authors = ["Dixon Sean Low Yan Feng", "Keith Neo Kai Si"]
 [tool.poetry.dependencies]
 python = "^3.12"
 numpy = "^2.1.2"
+dataclasses-json = "^0.6.7"
 
 [build-system]
 requires = ["poetry-core"]

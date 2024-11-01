@@ -1,8 +1,11 @@
-import dataclasses
+from dataclasses import dataclass
 from typing import Protocol
 
+from dataclasses_json import dataclass_json
 
-@dataclasses.dataclass
+
+@dataclass_json
+@dataclass
 class Alert:
     header: str
     description: str
