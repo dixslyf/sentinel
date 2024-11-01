@@ -41,6 +41,11 @@ class AsyncDetector(Protocol):
         Detects objects in the given frame asynchronously.
         """
 
+    async def clean_up(self) -> None:
+        """
+        Cleans up any resources associated with this detector.
+        """
+
 
 class SyncDetector(Protocol):
     """
@@ -50,4 +55,9 @@ class SyncDetector(Protocol):
     def detect(self, frame: Frame) -> DetectionResult:
         """
         Detects objects in the given frame synchronously.
+        """
+
+    def clean_up(self) -> None:
+        """
+        Cleans up any resources associated with this detector.
         """

@@ -503,6 +503,7 @@ class VideoSourceManager:
         for vid_src in self._video_sources.values():
             if vid_src.task is task:
                 vid_src.task = None
+                break
 
         # If there was an exception set the status of the video source to error
         # and call exception callbacks.
@@ -574,6 +575,7 @@ class VideoSourceManager:
         assert vid_src.detector_sub is not None
 
         await vid_src.detector_sub.dispose_async()
+        await vid_src.detector.aclose()
         vid_src.detector = None
         vid_src.detector_sub = None
 

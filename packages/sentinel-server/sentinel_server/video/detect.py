@@ -102,6 +102,7 @@ class ReactiveDetector(AsyncObservable[DetectionResult], AsyncObserver[Frame]):
 
     async def aclose(self):
         await self._subject_out.aclose()
+        await self._raw_detector.clean_up()
 
 
 class AsyncDetectorWrapper(AsyncDetector):
@@ -116,3 +117,6 @@ class AsyncDetectorWrapper(AsyncDetector):
         return await sentinel_server.tasks.run_in_thread(
             self._sync_detector.detect, frame
         )
+
+    async def clean_up(self) -> None:
+        await sentinel_server.tasks.run_in_thread(self._sync_detector.clean_up)
