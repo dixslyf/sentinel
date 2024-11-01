@@ -5,7 +5,7 @@ import math
 import typing
 from asyncio import Queue
 from enum import Enum
-from typing import Any, Optional, Self
+from typing import Any, Callable, Optional, Self
 
 from aioreactive import AsyncDisposable, AsyncObservable, AsyncObserver, AsyncSubject
 from sentinel_core.alert import Alert, Emitter
@@ -18,12 +18,11 @@ from sentinel_core.video import (
 )
 from sentinel_core.video.detect import DetectionResult
 
-import sentinel_server.globals as globals
 import sentinel_server.tasks
-from sentinel_server.alert import AlertManager, Emitter
+from sentinel_server.alert import AlertManager
 from sentinel_server.models import VideoSource as DbVideoSource
 from sentinel_server.plugins import PluginDescriptor, PluginManager
-from sentinel_server.video.detect import DetectionResult, ReactiveDetector
+from sentinel_server.video.detect import ReactiveDetector
 
 logger = logging.getLogger(__name__)
 
@@ -89,6 +88,7 @@ class VideoSource:
     db_info: DbVideoSource
 
     status: VideoSourceStatus
+
     subscribers: dict[AsyncObserver[DetectionResult], Optional[AsyncDisposable]] = (
         dataclasses.field(default_factory=lambda: {})
     )
@@ -204,6 +204,9 @@ class VideoSourceManager:
         self._plugin_manager: PluginManager = plugin_manager
         self._alert_manager: AlertManager = alert_manager
         self._video_sources: dict[int, VideoSource] = {}
+
+        self._task_exception_callbacks: list[Callable[[BaseException], None]] = []
+        self._status_change_callbacks: list[Callable[[VideoSource], None]] = []
 
     async def load_video_sources_from_db(self) -> None:
         async for db_vid_src in DbVideoSource.all():
@@ -328,6 +331,9 @@ class VideoSourceManager:
         vid_src.db_info.enabled = True
         await vid_src.db_info.save()
 
+        vid_src.status = VideoSourceStatus.Ok
+        self._signal_status_change(vid_src)
+
         logger.info(f'Enabled video source "{vid_src.name}" (id: {vid_src.id})')
 
         # TODO: error handling
@@ -360,7 +366,7 @@ class VideoSourceManager:
             await self.unsubscribe_from(id, observer, _hard=False)
 
         await self._stop_detector(id)
-        self._stop_video_stream(id)
+        await self._stop_video_stream(id)
 
         # Unregister and delete the emitter.
         if vid_src.emitter is not None:
@@ -395,6 +401,22 @@ class VideoSourceManager:
         logger.info(
             f'Subscription removed from "{vid_src.name}" (id: {id}) {"(hard)" if _hard else ""}'
         )
+
+    def add_task_exception_callback(self, callback: Callable[[BaseException], None]):
+        self._task_exception_callbacks.append(callback)
+
+    def remove_task_exception_callback(self, callback: Callable[[BaseException], None]):
+        self._task_exception_callbacks.remove(callback)
+
+    def add_status_change_callback(self, callback: Callable[[VideoSource], None]):
+        self._status_change_callbacks.append(callback)
+
+    def remove_status_change_callback(self, callback: Callable[[VideoSource], None]):
+        self._status_change_callbacks.remove(callback)
+
+    def _signal_status_change(self, video_source: VideoSource) -> None:
+        for callback in self._status_change_callbacks:
+            callback(video_source)
 
     def _initialise_plugin_component(
         self, vid_src: VideoSource, component_type: str
@@ -468,22 +490,29 @@ class VideoSourceManager:
             # Since we check whether the video stream is None earlier,
             # we can be sure that the video stream is not None.
             video_stream = typing.cast(ReactiveVideoStream, vid_src.video_stream)
-            try:
-                await video_stream.start()
-            except asyncio.CancelledError:  # For stopping the video stream.
-                await video_stream.stop()
-                vid_src.video_stream = None
-                vid_src.task = None
-                logger.info(
-                    f'Stopped video stream for "{vid_src.name}" (id: {vid_src.name})'
-                )
-                raise
+            await video_stream.start()
 
-        task = asyncio.create_task(video_source_task())
-        vid_src.task = task
+        vid_src.task = asyncio.create_task(video_source_task())
+        vid_src.task.add_done_callback(self._task_done_callback)
         logger.info(f'Started video stream for "{vid_src.name}" (id: {vid_src.id})')
 
         return True
+
+    def _task_done_callback(self, task: asyncio.Task):
+        # Find the corresponding video source and set the task to None.
+        for vid_src in self._video_sources.values():
+            if vid_src.task is task:
+                vid_src.task = None
+
+        # If there was an exception set the status of the video source to error
+        # and call exception callbacks.
+        if not task.cancelled():
+            ex = task.exception()
+            if ex is not None:
+                vid_src.status = VideoSourceStatus.Error
+                self._signal_status_change(vid_src)
+                for callback in self._task_exception_callbacks:
+                    callback(ex)
 
     async def _start_detector(self, id: int) -> bool:
         vid_src = self._video_sources[id]
@@ -522,17 +551,16 @@ class VideoSourceManager:
 
         return True
 
-    def _stop_video_stream(self, id: int) -> bool:
+    async def _stop_video_stream(self, id: int) -> bool:
         vid_src = self._video_sources[id]
 
         # Video stream wasn't running in the first place.
-        if vid_src.task is None:
+        if vid_src.video_stream is None:
             return False
 
-        vid_src.task.cancel()
-        logging.info(
-            f'Cancellation request sent to video source task for "{vid_src.name}" (id: {vid_src.id})'
-        )
+        await vid_src.video_stream.stop()
+        vid_src.video_stream = None
+        logger.info(f'Stopped video stream for "{vid_src.name}" (id: {vid_src.name})')
 
         return True
 

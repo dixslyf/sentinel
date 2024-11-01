@@ -1,8 +1,9 @@
 import asyncio
+import logging
 import os
 
 import platformdirs
-from nicegui import run
+from nicegui import run, ui
 
 import sentinel_server.config
 from sentinel_server.alert import AlertManager
@@ -46,6 +47,9 @@ def init_video_source_manager() -> None:
     global plugin_manager
     global alert_manager
     video_source_manager = VideoSourceManager(plugin_manager, alert_manager)
+    video_source_manager.add_task_exception_callback(
+        lambda ex: logging.error(f"An error occurred: {ex}")
+    )
     video_source_manager_loaded.set()
 
 

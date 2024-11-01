@@ -14,7 +14,7 @@ from sentinel_core.video import Frame
 import sentinel_server.globals as globals
 import sentinel_server.tasks
 import sentinel_server.ui
-from sentinel_server.video import VideoSourceStatus
+from sentinel_server.video import VideoSource, VideoSourceStatus
 from sentinel_server.video.detect import ReactiveDetectionVisualiser
 
 logger = logging.getLogger(__name__)
@@ -148,6 +148,36 @@ class CameraTable:
 
         self.table.props("loading=false")
         logger.debug("Refreshed camera table")
+
+    def on_status_change(self, vid_src: VideoSource) -> None:
+        id = vid_src.id
+
+        logger.info(
+            f'Updating status for video source "{vid_src.name}" (id: {vid_src.id}): {vid_src.status}'
+        )
+
+        # Find the corresponding row.
+        for row in self.table.rows:
+            if row["id"] == id:
+                row["status"] = (
+                    "OK" if vid_src.status == VideoSourceStatus.Ok else "Error"
+                )
+                row["enabled"] = vid_src.enabled
+                break
+
+        self.table.update()
+
+    async def register_status_changes(self) -> None:
+        await globals.video_source_manager_loaded.wait()
+        globals.video_source_manager.add_status_change_callback(self.on_status_change)
+        logger.info("Registered status change callback for cameras table")
+
+    async def deregister_status_changes(self) -> None:
+        await globals.video_source_manager_loaded.wait()
+        globals.video_source_manager.remove_status_change_callback(
+            self.on_status_change
+        )
+        logger.info("Deregistered status change callback for cameras table")
 
 
 class AddCameraDialog:
@@ -336,7 +366,6 @@ async def cameras_page() -> None:
 
         with ui.element("div").classes("flex justify-center text-center"):
             table = CameraTable()
-
             dialog = AddCameraDialog(table)
 
         with ui.element("div").classes("w-full flex justify-center"):
@@ -348,6 +377,10 @@ async def cameras_page() -> None:
     # Wait for the page to load before refreshing the table.
     await ui.context.client.connected()
     await table.refresh()
+    await table.register_status_changes()
+
+    await ui.context.client.disconnected()
+    await table.deregister_status_changes()
 
 
 class CameraView(AsyncObserver[Frame]):
