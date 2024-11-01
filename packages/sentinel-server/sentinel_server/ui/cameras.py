@@ -104,11 +104,17 @@ class CameraTable:
         id = msg.args["id"]
         enabled = msg.args["enabled"]
 
+        row = next((r for r in self.table.rows if r["id"] == id), None)
+        assert row is not None
+
         vid_src_manager = globals.video_source_manager
         if enabled:
             await vid_src_manager.enable_video_source(id)
+            row["enabled"] = True
         else:
             await vid_src_manager.disable_video_source(id)
+            row["enabled"] = False
+        self.table.update()
 
     async def refresh(self) -> None:
         """
