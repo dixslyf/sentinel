@@ -21,6 +21,8 @@ class VideoSource(Model):
     name = fields.CharField(max_length=255, unique=True)
     enabled = fields.BooleanField()
 
+    detect_interval = fields.FloatField()
+
     vidstream_plugin_name = fields.CharField(max_length=255)
     vidstream_component_name = fields.CharField(max_length=255)
     vidstream_config = fields.JSONField()

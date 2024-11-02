@@ -252,6 +252,10 @@ class AddCameraDialog:
             # the currently selected detector component.
             self.detector_select.on_value_change(self._update_detector_config_inputs)
 
+            self.interval_input = ui.number(
+                label="Detection Interval (seconds)", value=1.0, min=0.0
+            )
+
             with ui.element("div").classes("w-full flex justify-end"):
                 ui.button("Finish", on_click=self._on_finish).classes(
                     "text-white bg-black"
@@ -348,6 +352,7 @@ class AddCameraDialog:
             vid_src_manager = globals.video_source_manager
             await vid_src_manager.add_video_source(
                 self.name_input.value,
+                self.interval_input.value,
                 vidstream_comp,
                 vidstream_kwargs,
                 detector_comp,

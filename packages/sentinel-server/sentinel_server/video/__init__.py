@@ -118,6 +118,10 @@ class VideoSource:
         return self.db_info.enabled
 
     @property
+    def detect_interval(self) -> float:
+        return self.db_info.detect_interval
+
+    @property
     def vidstream_plugin_name(self) -> str:
         return self.db_info.vidstream_plugin_name
 
@@ -233,6 +237,7 @@ class VideoSourceManager:
     async def add_video_source(
         self,
         name: str,
+        detect_interval: float,
         vidstream_comp: ComponentDescriptor,
         vidstream_config: dict[str, Any],
         detector_comp: ComponentDescriptor,
@@ -272,6 +277,7 @@ class VideoSourceManager:
         db_vid_src = DbVideoSource(
             name=name,
             enabled=False,
+            detect_interval=detect_interval,
             vidstream_plugin_name=vidstream_plugin_desc.name,
             vidstream_component_name=vidstream_comp.display_name,
             vidstream_config=vidstream_config,
@@ -540,9 +546,13 @@ class VideoSourceManager:
 
         # Create the reactive detector.
         if vid_src.detector_component.kind == ComponentKind.AsyncDetector:
-            vid_src.detector = ReactiveDetector(raw_detector)
+            vid_src.detector = ReactiveDetector(
+                raw_detector, interval=vid_src.detect_interval
+            )
         else:  # Synchronous detector
-            vid_src.detector = ReactiveDetector.from_sync_detector(raw_detector)
+            vid_src.detector = ReactiveDetector.from_sync_detector(
+                raw_detector, interval=vid_src.detect_interval
+            )
 
         vid_src.detector_sub = await vid_src.video_stream.subscribe_async(
             vid_src.detector

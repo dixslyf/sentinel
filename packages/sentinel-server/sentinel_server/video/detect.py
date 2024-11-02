@@ -72,7 +72,7 @@ class ReactiveDetectionVisualiser(
 
 
 class ReactiveDetector(AsyncObservable[DetectionResult], AsyncObserver[Frame]):
-    def __init__(self, raw_detector: AsyncDetector, interval: float = 1):
+    def __init__(self, raw_detector: AsyncDetector, interval: float = 1.0):
         self._raw_detector: AsyncDetector = raw_detector
         self._time_last: float = 0
         self._interval: float = interval
@@ -80,9 +80,11 @@ class ReactiveDetector(AsyncObservable[DetectionResult], AsyncObserver[Frame]):
         self._subject_out: AsyncSubject[DetectionResult] = AsyncSubject()
 
     @classmethod
-    def from_sync_detector(cls, raw_detector: SyncDetector) -> Self:
+    def from_sync_detector(
+        cls, raw_detector: SyncDetector, interval: float = 1.0
+    ) -> Self:
         async_detector = AsyncDetectorWrapper(raw_detector)
-        return cls(async_detector)
+        return cls(async_detector, interval=interval)
 
     async def subscribe_async(self, observer):
         return await self._subject_out.subscribe_async(observer)
