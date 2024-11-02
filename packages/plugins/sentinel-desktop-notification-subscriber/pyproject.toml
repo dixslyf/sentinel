@@ -10,7 +10,7 @@ python = "^3.12"
 notify-py = "^0.3.43"
 
 [tool.poetry.plugins."sentinel.plugins"]
-sentinel-desktop-notification-subscriber = "sentinel_desktop_notification_subscriber:DesktopNotificationSubscriberPlugin"
+sentinel-desktop-notification-subscriber = "sentinel_desktop_notification_subscriber:plugin"
 
 [build-system]
 requires = ["poetry-core"]

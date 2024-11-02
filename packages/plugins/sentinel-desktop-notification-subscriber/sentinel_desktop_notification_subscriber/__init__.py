@@ -1,29 +1,29 @@
-from collections.abc import Iterable
-
 from notifypy import Notify
-from sentinel_core.alert import Alert, Subscriber
-from sentinel_core.plugins import Plugin
-from sentinel_core.video import VideoStream
-from sentinel_core.video.detect import Detector
+from sentinel_core.alert import Alert, SyncSubscriber
+from sentinel_core.plugins import ComponentDescriptor, ComponentKind, Plugin
 
 
-class DesktopNotificationSubscriber(Subscriber):
+class DesktopNotificationSubscriber(SyncSubscriber):
     """
     A subscriber that receives alerts in the form of desktop notifications.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
-    async def notify(self, alert: Alert):
+    def notify(self, alert: Alert) -> None:
         notif = Notify()
-        notif.title = alert.header
+        notif.title = f"{alert.header} (source: {alert.source})"
         notif.message = alert.description
-        notif.send(block=False)
+        notif.send()
 
 
-class DesktopNotificationSubscriberPlugin(Plugin):
-    name = "Desktop Notification Subscriber"
-    video_stream_classes: Iterable[type[VideoStream]] = set()
-    detector_classes: Iterable[type[Detector]] = set()
-    subscriber_classes: Iterable[type[Subscriber]] = {DesktopNotificationSubscriber}
+_component_descriptor = ComponentDescriptor(
+    display_name="Desktop Notification Subscriber",
+    kind=ComponentKind.SyncSubscriber,
+    cls=DesktopNotificationSubscriber,
+    args=(),
+)
+
+
+plugin = Plugin(frozenset({_component_descriptor}))
