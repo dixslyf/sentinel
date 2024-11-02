@@ -233,6 +233,7 @@ class VideoSourceManager:
             if vid_src.enabled:
                 self._start_video_stream(vid_src.id)
                 await self._start_detector(vid_src.id)
+                await self._register_emitter(vid_src.id)
 
     async def add_video_source(
         self,
@@ -352,10 +353,7 @@ class VideoSourceManager:
         for observer in vid_src.subscribers.keys():
             await self.subscribe_to(id, observer)
 
-        # Create and register the emitter.
-        emitter = await VideoSourceAlertEmitter.create(vid_src)
-        vid_src.emitter = emitter
-        await self._alert_manager.add_emitter(emitter)
+        await self._register_emitter(id)
 
     async def disable_video_source(self, id: int) -> None:
         vid_src = self._video_sources[id]
@@ -374,10 +372,7 @@ class VideoSourceManager:
         await self._stop_detector(id)
         await self._stop_video_stream(id)
 
-        # Unregister and delete the emitter.
-        if vid_src.emitter is not None:
-            await self._alert_manager.remove_emitter(vid_src.emitter)
-            vid_src.emitter = None
+        await self._deregister_emitter(id)
 
     async def subscribe_to(
         self, id: int, observer: AsyncObserver[DetectionResult]
@@ -592,3 +587,15 @@ class VideoSourceManager:
         logging.info(f'Stopped detector for "{vid_src.name}" (id: {vid_src.id})')
 
         return True
+
+    async def _register_emitter(self, id: int) -> None:
+        vid_src = self._video_sources[id]
+        emitter = await VideoSourceAlertEmitter.create(vid_src)
+        vid_src.emitter = emitter
+        await self._alert_manager.add_emitter(emitter)
+
+    async def _deregister_emitter(self, id: int) -> None:
+        vid_src = self._video_sources[id]
+        if vid_src.emitter is not None:
+            await self._alert_manager.remove_emitter(vid_src.emitter)
+            vid_src.emitter = None
