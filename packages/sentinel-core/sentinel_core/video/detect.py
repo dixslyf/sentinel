@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import Optional, Protocol
 
 from dataclasses_json import dataclass_json
+
 from sentinel_core.video import Frame
 
 

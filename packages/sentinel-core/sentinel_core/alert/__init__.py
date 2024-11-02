@@ -12,15 +12,38 @@ class Alert:
     source: str
 
 
-class Subscriber(Protocol):
+class AsyncSubscriber(Protocol):
     """
-    A subscriber that receives alert notifications.
+    A subscriber that receives alert notifications asynchronously.
     """
 
-    async def notify(self, alert: Alert):
+    async def notify(self, alert: Alert) -> None:
         """
         Receive an alert notification.
         """
+
+    async def clean_up(self) -> None:
+        """
+        Clean up any resources associated with the subscriber.
+        """
+        return
+
+
+class SyncSubscriber(Protocol):
+    """
+    A subscriber that receives alert notifications synchronously.
+    """
+
+    def notify(self, alert: Alert) -> None:
+        """
+        Receive an alert notification.
+        """
+
+    def clean_up(self) -> None:
+        """
+        Clean up any resources associated with the subscriber.
+        """
+        pass
 
 
 class Emitter(Protocol):

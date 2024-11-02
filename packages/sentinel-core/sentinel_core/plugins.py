@@ -2,7 +2,7 @@ import dataclasses
 from enum import Enum
 from typing import Any, Callable, Optional, Self
 
-from sentinel_core.alert import Subscriber
+from sentinel_core.alert import AsyncSubscriber, SyncSubscriber
 from sentinel_core.video import AsyncVideoStream, SyncVideoStream
 from sentinel_core.video.detect import AsyncDetector, SyncDetector
 
@@ -33,12 +33,18 @@ class ComponentKind(Enum):
     SyncVideoStream = 1
     AsyncDetector = 2
     SyncDetector = 3
-    Subscriber = 4
+    AsyncSubscriber = 4
+    SyncSubscriber = 5
 
 
 @dataclasses.dataclass(frozen=True)
 class ComponentDescriptor[
-    T: AsyncVideoStream | SyncVideoStream | AsyncDetector | SyncDetector | Subscriber
+    T: AsyncVideoStream
+    | SyncVideoStream
+    | AsyncDetector
+    | SyncDetector
+    | AsyncSubscriber
+    | SyncSubscriber
 ]:
     display_name: str
     kind: ComponentKind
