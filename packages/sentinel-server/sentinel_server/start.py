@@ -72,6 +72,10 @@ async def setup():
     await globals.video_source_manager.load_video_sources_from_db()
     globals.video_source_manager_loaded_from_db.set()
 
+    globals.init_subscriber_manager()
+    await globals.subscriber_manager.load_from_db()
+    globals.subscriber_manager_loaded_from_db.set()
+
     logging.info("Sentinel started")
 
 

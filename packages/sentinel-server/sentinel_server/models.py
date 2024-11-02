@@ -32,6 +32,20 @@ class VideoSource(Model):
     detector_config = fields.JSONField()
 
 
+class Subscriber(Model):
+    """
+    Represents a subscriber that subscribes to alerts.
+    """
+
+    id = fields.IntField(pk=True)
+    name = fields.CharField(max_length=255, unique=True)
+    enabled = fields.BooleanField()
+
+    plugin_name = fields.CharField(max_length=255)
+    component_name = fields.CharField(max_length=255)
+    config = fields.JSONField()
+
+
 class Alert(Model):
     """
     Represents an alert.

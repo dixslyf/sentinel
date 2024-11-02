@@ -3,10 +3,10 @@ import logging
 import os
 
 import platformdirs
-from nicegui import run, ui
+from nicegui import run
 
 import sentinel_server.config
-from sentinel_server.alert import AlertManager
+from sentinel_server.alert import AlertManager, SubscriberManager
 from sentinel_server.config import Configuration
 from sentinel_server.plugins import PluginManager
 from sentinel_server.video import VideoSourceManager
@@ -14,6 +14,7 @@ from sentinel_server.video import VideoSourceManager
 plugin_manager: PluginManager
 video_source_manager: VideoSourceManager
 alert_manager: AlertManager
+subscriber_manager: SubscriberManager
 
 config_path: str
 config: Configuration
@@ -25,6 +26,8 @@ video_source_manager_loaded: asyncio.Event = asyncio.Event()
 video_source_manager_loaded_from_db: asyncio.Event = asyncio.Event()
 
 alert_manager_loaded: asyncio.Event = asyncio.Event()
+subscriber_manager_loaded: asyncio.Event = asyncio.Event()
+subscriber_manager_loaded_from_db: asyncio.Event = asyncio.Event()
 
 config_path_loaded: asyncio.Event = asyncio.Event()
 config_loaded: asyncio.Event = asyncio.Event()
@@ -71,3 +74,14 @@ async def init_alert_manager() -> None:
     global alert_manager
     alert_manager = await AlertManager.create()
     alert_manager_loaded.set()
+
+
+def init_subscriber_manager() -> None:
+    assert plugin_manager_loaded.is_set()
+    assert alert_manager_loaded.is_set()
+
+    global subscriber_manager
+    global plugin_manager
+    global alert_manager
+    subscriber_manager = SubscriberManager(alert_manager, plugin_manager)
+    subscriber_manager_loaded.set()
