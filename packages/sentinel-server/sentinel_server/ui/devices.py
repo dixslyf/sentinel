@@ -6,8 +6,10 @@ from nicegui.elements.input import Input
 from nicegui.elements.select import Select
 from nicegui.events import GenericEventArguments, ValueChangeEventArguments
 
+import sentinel_server.globals as globals
 import sentinel_server.tasks
 import sentinel_server.ui
+from sentinel_server.alert import ManagedSubscriber, SubscriberStatus
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +37,7 @@ class DeviceTable:
             "label": "Plugin / Component",
             "field": "plugin_component",
         },
+        {"name": "status", "label": "Status", "field": "status"},
         {"name": "enabled", "label": "Enabled", "field": "enabled"},
     ]
 
@@ -59,38 +62,49 @@ class DeviceTable:
         id = msg.args["id"]
         enabled = msg.args["enabled"]
 
-        # FIXME: remove these placeholders
+        row = next((r for r in self.table.rows if r["id"] == id), None)
+        assert row is not None
+
+        await globals.subscriber_manager_loaded.wait()
+        await globals.subscriber_manager_loaded_from_db.wait()
+        subscriber_manager = globals.subscriber_manager
+
         if enabled:
-            ui.notify(f"Enabled {id}")
+            await subscriber_manager.enable_subscriber(id)
+            row["enabled"] = True
         else:
-            ui.notify(f"Disabled {id}")
+            await subscriber_manager.disable_subscriber(id)
+            row["enabled"] = False
+
+        self.table.update()
 
     async def refresh(self) -> None:
         """
         Refreshes the devices table by clearing existing rows and
         repopulating it with camera source data from the database.
         """
-        # FIXME: remove this and modify the code below
-        # when the subscriber manager has been implemented
-        self.table.props("loading=false")
-        logger.debug("Refreshed devices table")
-        return
+        await globals.subscriber_manager_loaded.wait()
+        await globals.subscriber_manager_loaded_from_db.wait()
 
         self.table.rows.clear()
-        self.table.update()
 
-        subscribers: dict[int, Any] = {}
-        for _, sub in subscribers.items():
+        managed_subscribers: dict[int, ManagedSubscriber] = (
+            globals.subscriber_manager.managed_subscribers
+        )
+
+        for _, sub in managed_subscribers.items():
             self.table.add_row(
                 {
                     "id": sub.id,
                     "name": sub.name,
                     "plugin_component": f"{sub.plugin_name} / {sub.component_name}",
+                    "status": "OK" if sub.status == SubscriberStatus.Ok else "Error",
                     "enabled": sub.enabled,
                 }
             )
 
         self.table.props("loading=false")
+        self.table.update()
         logger.debug("Refreshed devices table")
 
 
@@ -152,9 +166,15 @@ class AddDeviceDialog:
         self.dialog.close()
 
     async def _update_plugin_component_select_options(self) -> None:
-        """Updates the options for the dropdown selection box for the video stream component."""
-        # FIXME: update this once a subscriber manager has been implemented
-        pass
+        """Updates the options for the dropdown selection box for the component."""
+        await globals.subscriber_manager_loaded.wait()
+        available_subscriber_components = (
+            globals.subscriber_manager.available_subscriber_components()
+        )
+
+        self.component_select.set_options(
+            {comp: comp.display_name for comp in available_subscriber_components}
+        )
 
     def _update_component_config_inputs(self, args: ValueChangeEventArguments) -> None:
         """
@@ -187,11 +207,13 @@ class AddDeviceDialog:
             arg_name: input.value for arg_name, input in self.component_inputs.items()
         }
 
-        comp = self.component_select.value
-
         try:
-            # FIXME: make an API call to the subscriber manager
-            pass
+            await globals.subscriber_manager_loaded.wait()
+            await globals.subscriber_manager.add_subscriber(
+                name=self.name_input.value,
+                component=self.component_select.value,
+                config=subscriber_kwargs,
+            )
         except Exception as ex:
             ui.notify(f"An error occurred: {ex}", color="negative")
 
