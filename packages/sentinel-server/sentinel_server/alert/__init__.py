@@ -313,7 +313,44 @@ class SubscriberManager:
         ]
 
     async def load_from_db(self) -> None:
-        pass
+        async for db_info in DbSubscriber.all():
+            managed_subscriber = ManagedSubscriber(
+                db_info=db_info,
+                status=SubscriberStatus.Ok,
+            )
+            self._managed_subscribers[managed_subscriber.id] = managed_subscriber
+
+            plugin_desc = self._plugin_manager.find_plugin_desc(
+                lambda plugin_desc: plugin_desc.name == db_info.plugin_name
+            )
+
+            if plugin_desc is None or plugin_desc.plugin is None:
+                managed_subscriber.status = SubscriberStatus.Error
+                logger.info(
+                    f'Recreated subscriber from database for "{db_info.name}" (id: {db_info.id})'
+                    f"but could not find or load subscriber plugin"
+                )
+                return
+
+            component = plugin_desc.plugin.find_component(
+                lambda comp: comp.display_name == db_info.component_name
+            )
+            if component is None:
+                managed_subscriber.status = SubscriberStatus.Error
+                logger.info(
+                    f'Recreated subscriber from database for "{db_info.name}" (id: {db_info.id})'
+                    f"but could not find subscriber component"
+                )
+                return
+
+            managed_subscriber.plugin_desc = plugin_desc
+            managed_subscriber.component = component
+            logger.info(
+                f'Recreated subscriber from database for "{db_info.name}" (id: {db_info.id})'
+            )
+
+            if managed_subscriber.enabled:
+                await self._register_subscriber(managed_subscriber.id)
 
     async def add_subscriber(
         self,
@@ -367,9 +404,31 @@ class SubscriberManager:
         managed_subscriber.status = SubscriberStatus.Ok
         # self._signal_status_change(managed_subscriber)
 
+        await self._register_subscriber(id)
+
+        logger.info(
+            f'Enabled subscriber "{managed_subscriber.name}" (id: {managed_subscriber.id})'
+        )
+
+    async def disable_subscriber(self, id: int) -> None:
+        managed_subscriber = self._managed_subscribers[id]
+
+        # Update the corresponding entry in the database.
+        managed_subscriber.db_info.enabled = False
+        await managed_subscriber.db_info.save()
+
+        await self._deregister_subscriber(id)
+
+        logger.info(
+            f'Disabled subscriber "{managed_subscriber.name}" (id: {managed_subscriber.id})'
+        )
+
+    async def _register_subscriber(self, id: int) -> bool:
+        managed_subscriber = self._managed_subscribers[id]
+
         # Raw subscriber already created.
         if managed_subscriber.raw is not None:
-            return
+            return False
 
         if managed_subscriber.component is None:
             # TODO: handle error
@@ -378,9 +437,8 @@ class SubscriberManager:
                 f'"{managed_subscriber.name}" (id: {managed_subscriber.id}) '
                 "but could not find component"
             )
-            return
+            return False
 
-        # Create and register the raw subscriber with the alert manager.
         kwargs = managed_subscriber.config
         if managed_subscriber.component.args_transform is not None:
             kwargs = managed_subscriber.component.args_transform(
@@ -395,23 +453,13 @@ class SubscriberManager:
             await self._alert_manager.add_sync_subscriber(raw_subscriber)
 
         managed_subscriber.raw = raw_subscriber
+        return True
 
-        logger.info(
-            f'Enabled subscriber "{managed_subscriber.name}" (id: {managed_subscriber.id})'
-        )
-
-    async def disable_subscriber(self, id: int) -> None:
+    async def _deregister_subscriber(self, id: int) -> bool:
         managed_subscriber = self._managed_subscribers[id]
 
-        # Update the corresponding entry in the database.
-        managed_subscriber.db_info.enabled = False
-        await managed_subscriber.db_info.save()
-
-        # Deregister the raw subscriber from the alert manager.
         if managed_subscriber.raw is not None:
             await self._alert_manager.remove_subscriber(managed_subscriber.raw)
             managed_subscriber.raw = None
-
-        logger.info(
-            f'Disabled subscriber "{managed_subscriber.name}" (id: {managed_subscriber.id})'
-        )
+            return True
+        return False
