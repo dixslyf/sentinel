@@ -254,7 +254,7 @@ class AddCameraDialog:
 
             self.interval_input = ui.number(
                 label="Detection Interval (seconds)", value=1.0, min=0.0
-            )
+            ).classes("w-full")
 
             with ui.element("div").classes("w-full flex justify-end"):
                 ui.button("Finish", on_click=self._on_finish).classes(
