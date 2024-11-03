@@ -12,7 +12,8 @@ def add_global_style():
 def pages_shared():
     # top nav bar
     with ui.header().classes("bg-gray-800 justify-between items-center shadow-2xl"):
-        ui.label("Sentinel").classes("text-2xl text-gray-200")
+        # ui.label("Sentinel").classes("text-2xl text-gray-200")
+        ui.image("sentinel_server/ui/static/sentinel_logo.png").classes("h-18 w-16")
 
         with ui.element("div").classes("flex gap-2"):
             ui.label(f"{app.storage.user['username']}").classes(
