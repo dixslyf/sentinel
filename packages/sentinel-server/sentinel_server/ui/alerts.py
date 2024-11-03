@@ -137,4 +137,4 @@ async def alerts_page():
     await alert_table.register()
 
     await ui.context.client.disconnected()
-    alert_table.deregister()
+    await alert_table.deregister()
