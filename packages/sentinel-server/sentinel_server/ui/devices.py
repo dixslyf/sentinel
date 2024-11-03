@@ -44,7 +44,7 @@ class DeviceTable:
     def __init__(self) -> None:
         self.table = ui.table(columns=DeviceTable.columns, rows=[], row_key="id").props(
             "loading"
-        )
+        ).classes("w-11/12 border-2 border-gray-100").props("table-header-style='background-color: #f0f0f0'").props("flat")
 
         # Enabled checkbox.
         self.table.add_slot(
@@ -135,26 +135,29 @@ class AddDeviceDialog:
         # inputs when they complete the form.
         self.component_inputs: dict[str, Input | Select] = {}
 
-        with self.dialog, ui.card():
-            ui.label("Add Device")
-
+        with self.dialog, ui.card().classes("w-1/5"):
+            with ui.element("div").classes("w-full flex justify-between"):
+                ui.label("Add Device").classes("flex items-center text-xl bold")
+                # close button
+                with ui.button(on_click=self.close).props("flat").classes("w-10"):
+                    ui.icon("close").classes("text-gray-400")
+            
             # Name of the device.
-            self.name_input = ui.input(label="Name")
+            self.name_input = ui.input(label="Name").classes("w-full")
 
             # Selection box for the plugin component.
-            self.component_select = ui.select({}, label="Device type")
+            self.component_select = ui.select({}, label="Device type").classes("w-full")
 
             # Section containing inputs for configuration specific
             # to the plugin component.
-            self.component_section = ui.element("div")
+            self.component_section = ui.element("div").classes("w-full")
 
             # Update the form to show configuration inputs for
             # the currently selected plugin component.
             self.component_select.on_value_change(self._update_component_config_inputs)
 
-            with ui.grid(columns=2):
-                ui.button("Close", on_click=self.close)
-                ui.button("Finish", on_click=self._on_finish)
+            with ui.element("div").classes("w-full flex justify-end"):
+                ui.button("Finish", on_click=self._on_finish).classes("text-white bg-black")
 
     async def open(self):
         """Opens the dialog."""
@@ -226,13 +229,16 @@ async def devices_page() -> None:
     sentinel_server.ui.add_global_style()
     sentinel_server.ui.pages_shared()
 
-    ui.label("Devices")
+    # ui.label("Devices")
+    with ui.element("div").classes("w-full flex flex-col gap-5 justify-center text-center mt-10"):
 
-    table = DeviceTable()
-    dialog = AddDeviceDialog(table)
+        with ui.element("div").classes("flex justify-center text-center"):
+            table = DeviceTable()
+            dialog = AddDeviceDialog(table)
 
-    with ui.row():
-        ui.button("Add", on_click=dialog.open)
+        with ui.element("div").classes("w-full flex justify-center"):
+            with ui.element("div").classes("w-11/12 flex justify-end"):
+                ui.button("Add", on_click=dialog.open).classes("bg-black rounded-xl py-1 px-3 text-[#cad3f5]").props("no-caps")
 
     # Wait for the page to load before refreshing the table.
     await ui.context.client.connected()

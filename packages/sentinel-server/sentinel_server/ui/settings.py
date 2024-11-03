@@ -37,11 +37,12 @@ class PluginTable:
     ]
 
     def __init__(self) -> None:
+        self.dirty_msg = ui.label("Restart Sentinel to apply changes.").classes("text-lg text-[#ff0000] font-semibold")
+
         self.table = ui.table(
             columns=PluginTable.columns, rows=[], row_key="name"
         ).props("loading").classes("w-7/12 border-2 border-gray-100").props("flat").props("table-header-style='background-color: #f0f0f0'")
 
-        self.dirty_msg = ui.label("Restart Sentinel to apply changes.")
 
         # Enabled checkbox.
         self.table.add_slot(
@@ -111,7 +112,7 @@ class PluginsSection:
         plugins_card = ui.card().props("flat").classes("w-full border-b-2 border-gray-100")
         with plugins_card:
             ui.label("Available Plugins").classes("text-3xl font-bold text-[#4a4e69]")
-            with ui.element("div").classes("w-full flex justify-center"):
+            with ui.element("div").classes("w-full flex flex-col items-center"):
                 self.table = PluginTable()
 
     async def refresh(self) -> None:

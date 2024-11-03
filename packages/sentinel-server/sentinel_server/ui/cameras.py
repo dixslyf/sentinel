@@ -382,7 +382,7 @@ async def cameras_page() -> None:
         with ui.element("div").classes("w-full flex justify-center"):
             with ui.element("div").classes("w-11/12 flex justify-end"):
                 ui.button("Add", on_click=dialog.open).classes(
-                    "bg-black rounded-xl py-1 px-3"
+                    "bg-black rounded-xl py-1 px-3 text-[#cad3f5]"
                 ).props("no-caps")
 
     # Wait for the page to load before refreshing the table.
