@@ -42,9 +42,13 @@ class DeviceTable:
     ]
 
     def __init__(self) -> None:
-        self.table = ui.table(columns=DeviceTable.columns, rows=[], row_key="id").props(
-            "loading"
-        ).classes("w-11/12 border-2 border-gray-100").props("table-header-style='background-color: #f0f0f0'").props("flat")
+        self.table = (
+            ui.table(columns=DeviceTable.columns, rows=[], row_key="id")
+            .props("loading")
+            .classes("w-11/12 border-2 border-gray-100")
+            .props("table-header-style='background-color: #f0f0f0'")
+            .props("flat")
+        )
 
         # Enabled checkbox.
         self.table.add_slot(
@@ -157,7 +161,9 @@ class AddDeviceDialog:
             self.component_select.on_value_change(self._update_component_config_inputs)
 
             with ui.element("div").classes("w-full flex justify-end"):
-                ui.button("Finish", on_click=self._on_finish).classes("text-white bg-black")
+                ui.button("Finish", on_click=self._on_finish).classes(
+                    "text-white bg-black"
+                )
 
     async def open(self):
         """Opens the dialog."""
@@ -230,7 +236,9 @@ async def devices_page() -> None:
     sentinel_server.ui.pages_shared()
 
     # ui.label("Devices")
-    with ui.element("div").classes("w-full flex flex-col gap-5 justify-center text-center mt-10"):
+    with ui.element("div").classes(
+        "w-full flex flex-col gap-5 justify-center text-center mt-10"
+    ):
 
         with ui.element("div").classes("flex justify-center text-center"):
             table = DeviceTable()
@@ -238,7 +246,9 @@ async def devices_page() -> None:
 
         with ui.element("div").classes("w-full flex justify-center"):
             with ui.element("div").classes("w-11/12 flex justify-end"):
-                ui.button("Add", on_click=dialog.open).classes("bg-black rounded-xl py-1 px-3 text-[#cad3f5]").props("no-caps")
+                ui.button("Add", on_click=dialog.open).classes(
+                    "bg-black rounded-xl py-1 px-3 text-[#cad3f5]"
+                ).props("no-caps")
 
     # Wait for the page to load before refreshing the table.
     await ui.context.client.connected()

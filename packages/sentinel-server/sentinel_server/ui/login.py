@@ -38,15 +38,23 @@ def login_page() -> Optional[RedirectResponse]:
 
     with ui.element("div").classes("w-screen h-screen flex m-0"):
         # left side of the page
-        with ui.element("div").classes("w-1/2 border-2 flex justify-between").style("background: linear-gradient(169deg, rgba(128,135,162,1) 20%, rgba(161,141,255,1) 52%, rgba(65,80,255,1) 99%);"):
+        with ui.element("div").classes("w-1/2 border-2 flex justify-between").style(
+            "background: linear-gradient(169deg, rgba(128,135,162,1) 20%, rgba(161,141,255,1) 52%, rgba(65,80,255,1) 99%);"
+        ):
             # ui.image("sentinel_server/ui/static/pair_of_eyes.png").classes("absolute inset-0 mx-auto my-auto object-contain w-[70%] opacity-20 pointer-events-none")
-            ui.image("sentinel_server/ui/static/sentinel_logo.png").classes("h-24 w-24 mt-10 ml-10")
-            
+            ui.image("sentinel_server/ui/static/sentinel_logo.png").classes(
+                "h-24 w-24 mt-10 ml-10"
+            )
+
             with ui.element("div").classes("flex gap-10 flex-col mx-auto mt-80"):
                 # ui.label("Welcome!").classes("text-5xl font-bold font-serif mr-20")
                 # ui.label("Begin Your Journer With Sentinel").classes("font-semibold text-xl font-serif w-full")
-                ui.label('Welcome!').classes("text-4xl font-extrabold text-[#cad3f5] mb-2")
-                ui.label('Begin Your Journey With Sentinel').classes("text-xl text-[#f5d182] italic")
+                ui.label("Welcome!").classes(
+                    "text-4xl font-extrabold text-[#cad3f5] mb-2"
+                )
+                ui.label("Begin Your Journey With Sentinel").classes(
+                    "text-xl text-[#f5d182] italic"
+                )
 
         # right side
         with ui.element("div").classes("w-1/2 flex justify-start text-center m-auto"):
@@ -62,9 +70,7 @@ def login_form() -> Optional[RedirectResponse]:
 
     # main styling for login form
     with ui.element("div").classes("space-y-4 w-2/5 ml-8"):
-        ui.label("Sign In").classes(
-            "font-semibold text-4xl text-left font-serif"
-        )
+        ui.label("Sign In").classes("font-semibold text-4xl text-left font-serif")
 
         username_input = ui.input(label="Username")
         password_input = ui.input(
