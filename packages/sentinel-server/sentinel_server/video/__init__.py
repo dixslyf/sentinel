@@ -19,7 +19,7 @@ from sentinel_core.video import (
 from sentinel_core.video.detect import DetectionResult
 
 import sentinel_server.tasks
-from sentinel_server.alert import AlertManager
+from sentinel_server.alert import SubscriptionRegistrar
 from sentinel_server.models import VideoSource as DbVideoSource
 from sentinel_server.plugins import PluginDescriptor, PluginManager
 from sentinel_server.video.detect import ReactiveDetector
@@ -203,10 +203,10 @@ class VideoSourceManager:
     def __init__(
         self,
         plugin_manager: PluginManager,
-        alert_manager: AlertManager,
+        subscription_registrar: SubscriptionRegistrar,
     ) -> None:
         self._plugin_manager: PluginManager = plugin_manager
-        self._alert_manager: AlertManager = alert_manager
+        self._subscription_registrar: SubscriptionRegistrar = subscription_registrar
         self._video_sources: dict[int, VideoSource] = {}
 
         self._task_exception_callbacks: list[Callable[[BaseException], None]] = []
@@ -592,10 +592,10 @@ class VideoSourceManager:
         vid_src = self._video_sources[id]
         emitter = await VideoSourceAlertEmitter.create(vid_src)
         vid_src.emitter = emitter
-        await self._alert_manager.add_emitter(emitter)
+        await self._subscription_registrar.add_emitter(emitter)
 
     async def _deregister_emitter(self, id: int) -> None:
         vid_src = self._video_sources[id]
         if vid_src.emitter is not None:
-            await self._alert_manager.remove_emitter(vid_src.emitter)
+            await self._subscription_registrar.remove_emitter(vid_src.emitter)
             vid_src.emitter = None

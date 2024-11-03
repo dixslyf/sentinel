@@ -105,7 +105,7 @@ class DatabaseSubscriber(AsyncSubscriber):
         logger.info(f"{alert.header}\n{alert.description}\n{alert.source}")
 
 
-class AlertManager:
+class SubscriptionRegistrar:
     def __init__(self) -> None:
         self._emitters: dict[ReactiveEmitter, Optional[asyncio.Task]] = {}
         self._subscribers: list[ReactiveSubscriber] = []
@@ -289,9 +289,11 @@ class ManagedSubscriber:
 
 class SubscriberManager:
     def __init__(
-        self, alert_manager: AlertManager, plugin_manager: PluginManager
+        self,
+        subscription_registrar: SubscriptionRegistrar,
+        plugin_manager: PluginManager,
     ) -> None:
-        self._alert_manager: AlertManager = alert_manager
+        self._subscription_registrar: SubscriptionRegistrar = subscription_registrar
         self._plugin_manager: PluginManager = plugin_manager
         self._managed_subscribers: dict[int, ManagedSubscriber] = {}
 
@@ -447,10 +449,10 @@ class SubscriberManager:
         raw_subscriber = managed_subscriber.component.cls(**kwargs)
 
         if managed_subscriber.component.kind == ComponentKind.AsyncSubscriber:
-            await self._alert_manager.add_async_subscriber(raw_subscriber)
+            await self._subscription_registrar.add_async_subscriber(raw_subscriber)
         else:
             assert managed_subscriber.component.kind == ComponentKind.SyncSubscriber
-            await self._alert_manager.add_sync_subscriber(raw_subscriber)
+            await self._subscription_registrar.add_sync_subscriber(raw_subscriber)
 
         managed_subscriber.raw = raw_subscriber
         return True
@@ -459,7 +461,7 @@ class SubscriberManager:
         managed_subscriber = self._managed_subscribers[id]
 
         if managed_subscriber.raw is not None:
-            await self._alert_manager.remove_subscriber(managed_subscriber.raw)
+            await self._subscription_registrar.remove_subscriber(managed_subscriber.raw)
             managed_subscriber.raw = None
             return True
         return False
