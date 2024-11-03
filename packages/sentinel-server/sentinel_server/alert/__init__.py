@@ -4,13 +4,14 @@ import typing
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Any, Optional, Self
+from typing import Any, AsyncGenerator, Optional, Self
 
 from aioreactive import AsyncDisposable, AsyncObservable, AsyncObserver, AsyncSubject
 from sentinel_core.alert import Alert, AsyncSubscriber, Emitter, SyncSubscriber
 from sentinel_core.plugins import ComponentDescriptor, ComponentKind
 
 import sentinel_server.tasks
+from sentinel_server.models import Alert as DbAlert
 from sentinel_server.models import Subscriber as DbSubscriber
 from sentinel_server.plugins import PluginDescriptor, PluginManager
 
@@ -99,15 +100,6 @@ class ReactiveEmitter(AsyncObservable[Alert]):
         return self._raw_emitter
 
 
-class DatabaseSubscriber(AsyncSubscriber):
-    def __init__(self) -> None:
-        pass
-
-    async def notify(self, alert: Alert):
-        # TODO: replace with database implementation
-        logger.info(f"{alert.header}\n{alert.description}\n{alert.source}")
-
-
 class SubscriptionRegistrar:
     def __init__(self) -> None:
         self._emitters: dict[ReactiveEmitter, Optional[asyncio.Task]] = {}
@@ -115,12 +107,6 @@ class SubscriptionRegistrar:
         self._subscriptions: dict[
             tuple[ReactiveEmitter, ReactiveSubscriber], AsyncDisposable
         ] = {}
-
-    @classmethod
-    async def create(cls) -> Self:
-        self = cls()
-        await self.add_async_subscriber(DatabaseSubscriber())
-        return self
 
     async def add_emitter(self, raw_emitter: Emitter) -> None:
         assert all(
@@ -246,6 +232,84 @@ class SubscriptionRegistrar:
             logger.info(f"Stopped emitter in alert manager: {emitter}")
             return True
         return False
+
+
+@dataclass
+class ManagedAlert:
+    _db_info: DbAlert
+
+    @property
+    def id(self) -> int:
+        return self._db_info.id
+
+    @property
+    def header(self) -> str:
+        return self._db_info.header
+
+    @property
+    def description(self) -> str:
+        return self._db_info.description
+
+    @property
+    def source(self) -> str:
+        return self._db_info.source
+
+    @property
+    def timestamp(self) -> datetime:
+        return self._db_info.timestamp
+
+
+class AlertManager:
+    class Auxiliary(AsyncSubscriber, AsyncObservable[ManagedAlert]):
+        def __init__(self, alert_manager: "AlertManager"):
+            self._alert_manager = alert_manager
+
+            self._subject_out: AsyncSubject[ManagedAlert] = AsyncSubject()
+
+        async def notify(self, alert: Alert) -> None:
+            managed_alert = await self._alert_manager.save_alert(alert)
+            await self._subject_out.asend(managed_alert)
+
+        async def subscribe_async(self, observer):
+            return await self._subject_out.subscribe_async(observer)
+
+    def __init__(self, registrar: SubscriptionRegistrar) -> None:
+        self._registrar: SubscriptionRegistrar = registrar
+
+        # Proper initialisation in `create()`.
+        self._auxiliary: AlertManager.Auxiliary
+
+    @classmethod
+    async def create(cls, registrar: SubscriptionRegistrar) -> Self:
+        self = cls(registrar)
+
+        self._auxiliary = cls.Auxiliary(self)
+        await registrar.add_async_subscriber(self._auxiliary)
+
+        return self
+
+    async def get_alerts(self) -> AsyncGenerator[ManagedAlert, None]:
+        async for db_info in DbAlert.all():
+            yield ManagedAlert(db_info)
+
+    async def save_alert(self, alert: Alert) -> ManagedAlert:
+        db_alert = DbAlert(
+            header=alert.header,
+            description=alert.description,
+            source=alert.source,
+            timestamp=alert.timestamp,
+        )
+
+        await db_alert.save()
+
+        logger.info(f"Saved alert to database (timestamp: {alert.timestamp})")
+
+        return ManagedAlert(db_alert)
+
+    async def subscribe(
+        self, subscriber: AsyncObserver[ManagedAlert]
+    ) -> AsyncDisposable:
+        return await self._auxiliary.subscribe_async(subscriber)
 
 
 class SubscriberStatus(Enum):

@@ -66,7 +66,7 @@ async def setup():
     await run.io_bound(globals.plugin_manager.init_plugins)
     globals.plugins_loaded.set()
 
-    await globals.init_subscription_registrar()
+    globals.init_subscription_registrar()
 
     globals.init_video_source_manager()
     await globals.video_source_manager.load_video_sources_from_db()
@@ -75,6 +75,8 @@ async def setup():
     globals.init_subscriber_manager()
     await globals.subscriber_manager.load_from_db()
     globals.subscriber_manager_loaded_from_db.set()
+
+    await globals.init_alert_manager()
 
     logging.info("Sentinel started")
 
