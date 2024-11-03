@@ -26,14 +26,20 @@ class PluginTable:
             "label": "Name",
             "field": "name",
             "required": True,
+            "align": "middle",
+            "classes": "text-lg text-[#4a4e69] text-center",
         },
-        {"name": "enabled", "label": "Enabled", "field": "enabled"},
+        {
+            "name": "enabled",
+            "label": "Enabled", 
+            "field": "enabled",
+        }
     ]
 
     def __init__(self) -> None:
         self.table = ui.table(
             columns=PluginTable.columns, rows=[], row_key="name"
-        ).props("loading")
+        ).props("loading").classes("w-7/12 border-2 border-gray-100").props("flat").props("table-header-style='background-color: #f0f0f0'")
 
         self.dirty_msg = ui.label("Restart Sentinel to apply changes.")
 
@@ -102,10 +108,11 @@ class PluginTable:
 
 class PluginsSection:
     def __init__(self):
-        plugins_card = ui.card()
+        plugins_card = ui.card().props("flat").classes("w-full border-b-2 border-gray-100")
         with plugins_card:
-            ui.label("Plugins")
-            self.table = PluginTable()
+            ui.label("Available Plugins").classes("text-3xl font-bold text-[#4a4e69]")
+            with ui.element("div").classes("w-full flex justify-center"):
+                self.table = PluginTable()
 
     async def refresh(self) -> None:
         await self.table.refresh()
@@ -113,44 +120,51 @@ class PluginsSection:
 
 class AuthenticationSection:
     def __init__(self):
-        auth_card = ui.card()
+        auth_card = ui.card().classes("w-full border-b-2 border-gray-100").props("flat")
         with auth_card:
-            ui.label("Authentication")
+            ui.label("User Authentication").classes("text-3xl font-bold text-[#4a4e69]")
 
-            # Username section
-            ui.label("Username")
-            self.username_input = ui.input(
-                label="Username",
-                value=app.storage.user["username"],
-                validation={"Username cannot be empty": lambda value: len(value) > 0},
-            )
+            with ui.element("div").classes("w-full flex justify-between"):
+                # Username section
+                with ui.element("div").classes("w-2/6"):
+                    
+                    ui.label("Username").classes("text-xl font-semibold text-[#4a4e69]")
+                    self.username_input = ui.input(
+                        label="Username",
+                        value=app.storage.user["username"],
+                        validation={"Username cannot be empty": lambda value: len(value) > 0},
+                    ).classes("w-full text-[#4a4e69]")
 
-            self.username_update_button = ui.button(
-                "Update", on_click=self.username_update_button_on_click
-            )
+                    with ui.element("div").classes("w-full flex justify-end"):
+                        self.username_update_button = ui.button(
+                            "Update", on_click=self.username_update_button_on_click
+                        ).classes("text-md text-[#cad3f5] bg-black rounded-xl hover:bg-gray-500").props("no-caps")
 
-            # Password section
-            ui.label("Change Password")
-            self.password_input = ui.input(
-                label="New Password",
-                password=True,
-                password_toggle_button=True,
-                validation={"Password cannot be empty": lambda value: len(value) > 0},
-            )
+                # Password section
+                with ui.element("div").classes("mr-40 w-2/6"):
+                
+                    ui.label("Change Password").classes("text-xl font-semibold text-[#4a4e69]")
+                    self.password_input = ui.input(
+                        label="New Password",
+                        password=True,
+                        password_toggle_button=True,
+                        validation={"Password cannot be empty": lambda value: len(value) > 0},
+                    ).classes("w-full text-[#4a4e69]")
 
-            self.password_confirm_input = ui.input(
-                label="Confirm New Password",
-                password=True,
-                password_toggle_button=True,
-                validation={
-                    "Passwords do not match": lambda value: value
-                    == self.password_input.value
-                },
-            ).without_auto_validation()
+                    self.password_confirm_input = ui.input(
+                        label="Confirm New Password",
+                        password=True,
+                        password_toggle_button=True,
+                        validation={
+                            "Passwords do not match": lambda value: value
+                            == self.password_input.value
+                        },
+                    ).without_auto_validation().classes("w-full text-[#4a4e69]")
 
-            self.password_update_button = ui.button(
-                "Update", on_click=self.password_update_button_on_click
-            )
+                    with ui.element("div").classes("w-full flex justify-end"):
+                        self.password_update_button = ui.button(
+                            "Update", on_click=self.password_update_button_on_click
+                        ).classes("text-md text-[#cad3f5] bg-black rounded-xl hover:bg-gray-500").props("no-caps")
 
     async def username_update_button_on_click(
         self, button: nicegui.elements.button.Button
@@ -191,13 +205,13 @@ class SystemSection:
             on_yes=lambda _: app.shutdown(),
         )
 
-        system_card = ui.card()
+        system_card = ui.card().props("flat")
         with system_card:
-            ui.label("System")
+            ui.label("System Controls").classes("text-3xl font-bold text-[#4a4e69]")
 
             with ui.grid(columns=2):
-                ui.button("Restart", on_click=restart_confirm_dialog.open)
-                ui.button("Shutdown", on_click=shutdown_confirm_dialog.open)
+                ui.button("Restart", on_click=restart_confirm_dialog.open).classes("text-md text-[#cad3f5] bg-black rounded-xl hover:bg-gray-500").props("no-caps")
+                ui.button("Shutdown", on_click=shutdown_confirm_dialog.open).classes("text-md text-[#cad3f5] bg-black rounded-xl hover:bg-gray-500").props("no-caps")
 
     def _restart(self, button: nicegui.elements.button.Button) -> None:
         # Log the user out, but don't explicitly redirect to the login page.
@@ -213,12 +227,12 @@ class SystemSection:
 @router.page("/settings")
 async def settings():
     sentinel_server.ui.pages_shared()
-    ui.label("settings")
+    # ui.label("settings")
 
-    plugins_section = PluginsSection()
-
-    AuthenticationSection()
-
-    SystemSection()
+    with ui.element("div").classes("flex flex-col w-full gap-5"):
+        
+        AuthenticationSection()
+        plugins_section = PluginsSection()
+        SystemSection()
 
     await plugins_section.refresh()

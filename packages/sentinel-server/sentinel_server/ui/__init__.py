@@ -11,22 +11,22 @@ def add_global_style():
 
 def pages_shared():
     # top nav bar
-    with ui.header().classes("bg-gray-800 justify-between items-center shadow-2xl"):
+    with ui.header().classes("bg-[#24273a] justify-between items-center shadow-2xl"):
         # ui.label("Sentinel").classes("text-2xl text-gray-200")
         ui.image("sentinel_server/ui/static/sentinel_logo.png").classes("h-18 w-16")
 
         with ui.element("div").classes("flex gap-2"):
             ui.label(f"{app.storage.user['username']}").classes(
-                "flex items-center text-xl text-gray-200"
+                "flex items-center text-xl text-[#cad3f5]"
             )
 
             with ui.element("div").classes():
                 with ui.button(on_click=logout_user).props("flat"):
-                    ui.icon("logout").classes("text-gray-300")
+                    ui.icon("logout").classes("text-[#cad3f5]")
 
     # left nav bar
     with ui.left_drawer(bottom_corner=True).classes("gap-10").style(
-        "background-color: #8525d9"
+        "background-color: #5b6078"
     ):
 
         # ui.button("Dashboard", on_click=lambda: ui.navigate.to("/dashboard"))
@@ -34,7 +34,7 @@ def pages_shared():
             "flex items-start w-full"
         ).props("flat no-caps"):
             with ui.element("div").classes(
-                "flex items-center gap-3 text-xl text-gray-200"
+                "flex items-center gap-3 text-xl text-[#cad3f5]"
             ):
                 ui.icon("dashboard")
                 ui.label("Dashboard")
@@ -44,7 +44,7 @@ def pages_shared():
             "flex items-start w-full"
         ).props("flat no-caps"):
             with ui.element("div").classes(
-                "flex items-center gap-3 text-xl text-gray-200"
+                "flex items-center gap-3 text-xl text-[#cad3f5]"
             ):
                 ui.icon("camera_alt")
                 ui.label("Cameras")
@@ -54,7 +54,7 @@ def pages_shared():
             "flex items-start w-full"
         ).props("flat no-caps"):
             with ui.element("div").classes(
-                "flex items-center gap-3 text-xl text-gray-200"
+                "flex items-center gap-3 text-xl text-[#cad3f5]"
             ):
                 ui.icon("devices_other")
                 ui.label("Devices")
@@ -64,7 +64,7 @@ def pages_shared():
             "flex items-start w-full"
         ).props("flat no-caps"):
             with ui.element("div").classes(
-                "flex items-center gap-3 text-xl text-gray-200"
+                "flex items-center gap-3 text-xl text-[#cad3f5]"
             ):
                 ui.icon("notification_important")
                 ui.label("Alerts")
@@ -74,7 +74,7 @@ def pages_shared():
             "flex items-start w-full"
         ).props("flat no-caps"):
             with ui.element("div").classes(
-                "flex items-center gap-3 text-xl text-gray-200"
+                "flex items-center gap-3 text-xl text-[#cad3f5]"
             ):
                 ui.icon("settings")
                 ui.label("Settings")
