@@ -29,7 +29,7 @@ class DeviceTable:
             "label": "ID",
             "field": "id",
             "required": True,
-            "align": "middle",
+            "align": "left",
         },
         {"name": "name", "label": "Name", "field": "name"},
         {
@@ -141,7 +141,7 @@ class AddDeviceDialog:
                 # close button
                 with ui.button(on_click=self.close).props("flat").classes("w-10"):
                     ui.icon("close").classes("text-gray-400")
-            
+
             # Name of the device.
             self.name_input = ui.input(label="Name").classes("w-full")
 
