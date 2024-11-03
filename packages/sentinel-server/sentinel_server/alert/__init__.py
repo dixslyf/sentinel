@@ -2,6 +2,7 @@ import asyncio
 import logging
 import typing
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
 from typing import Any, Optional, Self
 
@@ -54,7 +55,9 @@ class ReactiveSubscriber(AsyncObserver[Alert]):
         await self._raw_sub.notify(alert)
 
     async def athrow(self, ex: Exception):
-        alert = Alert("Sentinel Error", f"An error occurred: {str(ex)}", "Unknown")
+        alert = Alert(
+            "Sentinel Error", f"An error occurred: {str(ex)}", "Unknown", datetime.now()
+        )
         await self._raw_sub.notify(alert)
 
     async def aclose(self):

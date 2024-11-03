@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Protocol
 
 from dataclasses_json import dataclass_json
@@ -10,6 +11,7 @@ class Alert:
     header: str
     description: str
     source: str
+    timestamp: datetime
 
 
 class AsyncSubscriber(Protocol):

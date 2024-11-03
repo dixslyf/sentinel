@@ -4,6 +4,7 @@ import logging
 import math
 import typing
 from asyncio import Queue
+from datetime import datetime
 from enum import Enum
 from typing import Any, Callable, Optional, Self
 
@@ -189,7 +190,7 @@ class VideoSourceAlertEmitter(Emitter, AsyncObserver[DetectionResult]):
             objects.append(object_cat.name)
 
         desc: str = f"Detected: {", ".join(objects)}"
-        alert = Alert("Camera Alert", desc, self._vid_src.name)
+        alert = Alert("Camera Alert", desc, self._vid_src.name, datetime.now())
         await self._queue.put(alert)
 
     async def athrow(self, error: Exception):
