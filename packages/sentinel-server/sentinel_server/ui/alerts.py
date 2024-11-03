@@ -129,9 +129,10 @@ class AlertTable(AsyncObserver[ManagedAlert]):
 async def alerts_page():
     sentinel_server.ui.add_global_style()
     sentinel_server.ui.pages_shared()
-    ui.label("alerts")
 
-    alert_table = AlertTable()
+    with ui.element("div").classes("flex justify-center text-center w-full mt-10"):
+        alert_table = AlertTable()
+
     await alert_table.refresh()
     await alert_table.register()
 
