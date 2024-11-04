@@ -43,7 +43,7 @@ def login_page() -> Optional[RedirectResponse]:
         ):
             # ui.image("sentinel_server/ui/static/pair_of_eyes.png").classes("absolute inset-0 mx-auto my-auto object-contain w-[70%] opacity-20 pointer-events-none")
             ui.image("sentinel_server/ui/static/sentinel_logo.png").classes(
-                "h-24 w-24 mt-10 ml-10"
+                "h-[6.5rem] w-24 mt-10 ml-10"
             )
 
             with ui.element("div").classes("flex gap-10 flex-col mx-auto mt-80"):
