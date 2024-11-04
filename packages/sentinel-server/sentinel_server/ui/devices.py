@@ -166,13 +166,27 @@ class AddDeviceDialog:
                 )
 
     async def open(self):
-        """Opens the dialog."""
+        """
+        Opens the dialog, or if no subscriber components are available,
+        shows a notification to the user to prompt them to install and enable plugins.
+        """
+        if not await self._check_select_options():
+            ui.notify(
+                "No subscriber plugins enabled. "
+                "Plugins can be managed from the Settings page."
+            )
+            return
+
         await self._update_plugin_component_select_options()
         self.dialog.open()
 
     def close(self):
         """Closes the dialog."""
         self.dialog.close()
+
+    async def _check_select_options(self) -> bool:
+        await globals.subscriber_manager_loaded.wait()
+        return len(globals.subscriber_manager.available_subscriber_components()) > 0
 
     async def _update_plugin_component_select_options(self) -> None:
         """Updates the options for the dropdown selection box for the component."""

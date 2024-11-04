@@ -262,7 +262,20 @@ class AddCameraDialog:
                 )
 
     async def open(self):
-        """Opens the dialog."""
+        """
+        Opens the dialog, or if no video stream or detector components are available,
+        shows a notification to the user to prompt them to install and enable plugins.
+        """
+        if not (
+            await self._check_vidstream_select_options()
+            and await self._check_detector_select_options()
+        ):
+            ui.notify(
+                "No video stream or detector plugins enabled. "
+                "Plugins can be managed from the Settings page."
+            )
+            return
+
         await self._update_vidstream_select_options()
         await self._update_detector_select_options()
         self.dialog.open()
@@ -270,6 +283,18 @@ class AddCameraDialog:
     def close(self):
         """Closes the dialog."""
         self.dialog.close()
+
+    async def _check_vidstream_select_options(self) -> bool:
+        await globals.video_source_manager_loaded.wait()
+        vid_src_manager = globals.video_source_manager
+        available_vidstream_comps = vid_src_manager.available_vidstream_components()
+        return len(available_vidstream_comps) > 0
+
+    async def _check_detector_select_options(self) -> bool:
+        await globals.video_source_manager_loaded.wait()
+        vid_src_manager = globals.video_source_manager
+        available_detector_comps = vid_src_manager.available_detector_components()
+        return len(available_detector_comps) > 0
 
     async def _update_vidstream_select_options(self) -> None:
         """Updates the options for the dropdown selection box for the video stream component."""
