@@ -292,14 +292,14 @@ class DeviceDetails:
         # TODO: make this skeleton element larger
         self.skeleton = ui.skeleton()
 
-        self.id_markdown = ui.markdown()
-        self.name_markdown = ui.markdown()
-        self.enabled_markdown = ui.markdown()
-        self.status_markdown = ui.markdown()
+        self.id_markdown = ui.markdown().classes("text-xl")
+        self.name_markdown = ui.markdown().classes("text-xl")
+        self.enabled_markdown = ui.markdown().classes("text-xl")
+        self.status_markdown = ui.markdown().classes("text-xl")
 
-        self.plugin_comp_markdown = ui.markdown()
+        self.plugin_comp_markdown = ui.markdown().classes("text-xl")
         # TODO: use separate markdowns for individual configuration parameters
-        self.config_markdown = ui.markdown()
+        self.config_markdown = ui.markdown().classes("text-xl")
 
         # List of all the markdown elements above so that we can iterate over them easily.
         self._markdown_elements = [
@@ -373,7 +373,7 @@ class DeviceDeleteButton:
         self.confirm_dialog = ConfirmationDialog(
             f"Delete device with ID {vidsrc_id}?", on_yes=self._delete_device
         )
-        self.button = ui.button("Delete", on_click=self._on_click)
+        self.button = ui.button("Delete", on_click=self._on_click).classes("bg-black rounded-xl py-1 px-3 text-[#cad3f5]").props("no-caps")
 
     def _on_click(self, args: ClickEventArguments) -> None:
         self.confirm_dialog.open()
@@ -393,10 +393,12 @@ async def device_view_page(id: int) -> None:
 
     with ui.element("div").classes("w-full flex flex-col"):
         ui.label("Device Details").classes("px-5 py-2 text-4xl font-bold text-[#4a4e69] border-b-2 border-gray-200")
-        with ui.element("div").classes("border-2 border-blue-400"):
-            device_details = DeviceDetails(id)
 
-    DeviceDeleteButton(id)
+        with ui.element("div").classes("flex justify-center mt-5 border-b-2 border-gray-200 w-full"):
+            with ui.element("div").classes("flex flex-col"):
+                device_details = DeviceDetails(id)
+        with ui.element("div").classes("flex justify-end mr-5 mt-5"):
+            DeviceDeleteButton(id)
 
     await ui.context.client.connected()
     await device_details.fill_info()
