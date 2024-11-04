@@ -302,6 +302,20 @@ class VideoSourceManager:
         self._video_sources[db_vid_src.id] = vid_src
         logger.info(f'Created video source for "{vid_src.name}"')
 
+    async def remove_video_source(self, id: int) -> bool:
+        vid_src = self._video_sources.get(id)
+        if vid_src is None:
+            return False
+
+        await self.disable_video_source(id)
+        await vid_src.db_info.delete()
+
+        del self._video_sources[id]
+
+        logger.info(f'Deleted video source "{vid_src.name}" (id: {id})')
+
+        return True
+
     def available_vidstream_components(self) -> list[ComponentDescriptor]:
         """
         Returns a list of available video stream components based on the loaded plugins.
