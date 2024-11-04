@@ -162,7 +162,18 @@ class SubscriptionRegistrar:
         if emitter is None:
             return False
 
-        self._stop_emitter(emitter)
+        await self._stop_emitter(emitter)
+
+        # Remove all relevant subscriptions.
+        keys_to_remove: list[tuple[ReactiveEmitter, ReactiveSubscriber]] = []
+        for (em, subscriber), sub in self._subscriptions.items():
+            if em is emitter:
+                await sub.dispose_async()
+            keys_to_remove.append((em, subscriber))
+
+        for key in keys_to_remove:
+            del self._subscriptions[key]
+
         del self._emitters[emitter]
 
         logger.info(f"Removed emitter from alert manager: {raw_emitter}")
@@ -204,34 +215,46 @@ class SubscriptionRegistrar:
 
     def _start_emitter(self, emitter: ReactiveEmitter):
         async def emitter_task() -> None:
-            try:
-                await emitter.start()
-            except asyncio.CancelledError:  # For stopping the emitter.
-                await emitter.stop()
-                self._emitters[emitter] = None
-
-                # Remove all relevant subscriptions.
-                keys_to_remove: list[tuple[ReactiveEmitter, ReactiveSubscriber]] = []
-                for (em, subscriber), sub in self._subscriptions.items():
-                    if em is emitter:
-                        await sub.dispose_async()
-                    keys_to_remove.append((em, subscriber))
-
-                for key in keys_to_remove:
-                    del self._subscriptions[key]
+            await emitter.start()
 
         task = asyncio.create_task(emitter_task())
+        task.add_done_callback(self._emitter_task_done_callback)
         self._emitters[emitter] = task
 
         logger.info(f"Started emitter in alert manager: {emitter}")
 
-    def _stop_emitter(self, emitter: ReactiveEmitter) -> bool:
-        task = self._emitters[emitter]
-        if task is not None:
-            task.cancel()
-            logger.info(f"Stopped emitter in alert manager: {emitter}")
-            return True
-        return False
+        return True
+
+    def _emitter_task_done_callback(self, task: asyncio.Task):
+        # Find the corresponding reactive emitter and set the task to None.
+        reactive_emitter: Optional[ReactiveEmitter] = None
+        for remit, t in self._emitters.items():
+            if t is task:
+                reactive_emitter = remit
+                break
+
+        if reactive_emitter is not None:
+            self._emitters[reactive_emitter] = None
+
+        # TODO: how to handle exceptions?
+        if not task.cancelled():
+            ex = task.exception()
+            if ex is not None:
+                pass
+
+    async def _stop_emitter(self, emitter: ReactiveEmitter) -> bool:
+        # Emitter wasn't running in the first place.
+        if self._emitters[emitter] is None:
+            return False
+
+        await emitter.stop()
+
+        # Task should already have ended and cleaned itself up
+        # after calling `emitter.stop()`.
+
+        logger.info(f"Stopped emitter in alert manager: {emitter}")
+
+        return True
 
 
 @dataclass
