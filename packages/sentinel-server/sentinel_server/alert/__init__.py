@@ -288,8 +288,13 @@ class AlertManager:
 
         return self
 
-    async def get_alerts(self) -> AsyncGenerator[ManagedAlert, None]:
-        async for db_info in DbAlert.all():
+    async def get_alerts(
+        self, source: Optional[str] = None
+    ) -> AsyncGenerator[ManagedAlert, None]:
+        db_alerts = (
+            DbAlert.all() if source is None else DbAlert.filter(source=source).all()
+        )
+        async for db_info in db_alerts:
             yield ManagedAlert(db_info)
 
     async def save_alert(self, alert: Alert) -> ManagedAlert:

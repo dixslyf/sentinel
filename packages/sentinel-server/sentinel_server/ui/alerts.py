@@ -54,7 +54,7 @@ class AlertTable(AsyncObserver[ManagedAlert]):
         },
     ]
 
-    def __init__(self) -> None:
+    def __init__(self, source_id: Optional[int] = None) -> None:
         self.table = (
             ui.table(
                 columns=AlertTable.columns,
@@ -67,6 +67,8 @@ class AlertTable(AsyncObserver[ManagedAlert]):
             .props("table-header-style='background-color: #f0f0f0'")
             .props("flat")
         )
+
+        self.source_id = source_id
 
         self._subscription: Optional[AsyncDisposable] = None
 
@@ -86,9 +88,18 @@ class AlertTable(AsyncObserver[ManagedAlert]):
         self.table.rows.clear()
         self.table.update()
 
+        source_name: Optional[str]
+        if self.source_id:
+            await globals.video_source_manager_loaded.wait()
+            await globals.video_source_manager_loaded_from_db.wait()
+            vid_src = globals.video_source_manager.video_sources[self.source_id]
+            source_name = vid_src.name
+        else:
+            source_name = None
+
         await globals.alert_manager_loaded.wait()
 
-        async for alert in globals.alert_manager.get_alerts():
+        async for alert in globals.alert_manager.get_alerts(source_name):
             self.table.add_row(
                 {
                     "id": alert.id,

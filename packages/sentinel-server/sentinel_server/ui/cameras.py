@@ -14,6 +14,7 @@ from sentinel_core.video import Frame
 import sentinel_server.globals as globals
 import sentinel_server.tasks
 import sentinel_server.ui
+from sentinel_server.ui.alerts import AlertTable
 from sentinel_server.video import VideoSource, VideoSourceStatus
 from sentinel_server.video.detect import ReactiveDetectionVisualiser
 
@@ -472,10 +473,13 @@ async def camera_view_page(id: int) -> None:
             ui.label("Camera details")
 
     with ui.element("div").classes("w-full border-2 border-purple-400"):
-        ui.label("Logs here")
+        alert_table = AlertTable(source_id=id)
 
     await ui.context.client.connected()
     await camera_view.start_capture()
+    await alert_table.refresh()
+    await alert_table.register()
 
     await ui.context.client.disconnected()
     await camera_view.stop_capture()
+    await alert_table.deregister()
