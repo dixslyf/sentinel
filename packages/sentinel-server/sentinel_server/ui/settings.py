@@ -26,8 +26,16 @@ class PluginTable:
             "label": "Name",
             "field": "name",
             "required": True,
-            "align": "middle",
-            "classes": "text-lg text-[#4a4e69] text-center",
+        },
+        {
+            "name": "author",
+            "label": "First Author",
+            "field": "author",
+        },
+        {
+            "name": "version",
+            "label": "Version",
+            "field": "version",
         },
         {
             "name": "enabled",
@@ -96,6 +104,17 @@ class PluginTable:
             self.table.add_row(
                 {
                     "name": plugin_desc.name,
+                    "author": (
+                        # Unfortunately, Python packaging sucks and will only show the first author.
+                        plugin_desc.metadata["Author"]
+                        if plugin_desc.metadata is not None
+                        else "Unknown"
+                    ),
+                    "version": (
+                        plugin_desc.metadata["Version"]
+                        if plugin_desc.metadata is not None
+                        else "Unknown"
+                    ),
                     "enabled": plugin_desc.plugin is not None,
                 }
             )

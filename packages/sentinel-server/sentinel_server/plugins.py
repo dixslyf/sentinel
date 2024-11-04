@@ -2,7 +2,12 @@ import importlib.metadata
 import logging
 from collections.abc import Collection
 from dataclasses import dataclass
-from importlib.metadata import EntryPoint, EntryPoints
+from importlib.metadata import (
+    EntryPoint,
+    EntryPoints,
+    PackageMetadata,
+    PackageNotFoundError,
+)
 from typing import Callable, Optional
 
 from sentinel_core.plugins import ComponentDescriptor, Plugin
@@ -16,6 +21,7 @@ logger = logging.getLogger(__name__)
 class PluginDescriptor:
     name: str
     entry_point: EntryPoint
+    metadata: Optional[PackageMetadata] = None
     plugin: Optional[Plugin] = None
 
 
@@ -39,6 +45,7 @@ class PluginManager:
             PluginDescriptor(
                 entry_point.name,
                 entry_point,
+                PluginManager._get_metadata(entry_point),
                 plugin=(
                     self._load_plugin(entry_point)
                     if entry_point in whitelisted_entry_points
@@ -138,3 +145,13 @@ class PluginManager:
     @property
     def is_dirty(self) -> bool:
         return self._is_dirty
+
+    @staticmethod
+    def _get_metadata(entry_point: EntryPoint) -> Optional[PackageMetadata]:
+        dist_name = (
+            entry_point.dist.name if entry_point.dist is not None else entry_point.name
+        )
+        try:
+            return importlib.metadata.metadata(dist_name)
+        except PackageNotFoundError:
+            return None
