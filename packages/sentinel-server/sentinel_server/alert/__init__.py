@@ -4,7 +4,7 @@ import typing
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Any, AsyncGenerator, Optional, Self, Sequence
+from typing import Any, AsyncGenerator, Mapping, Optional, Self
 
 from aioreactive import AsyncDisposable, AsyncObservable, AsyncObserver, AsyncSubject
 from sentinel_core.alert import Alert, AsyncSubscriber, Emitter, SyncSubscriber
@@ -278,6 +278,10 @@ class ManagedAlert:
         return self._db_info.source
 
     @property
+    def source_deleted(self) -> str:
+        return self._db_info.source_deleted
+
+    @property
     def timestamp(self) -> datetime:
         return self._db_info.timestamp
 
@@ -315,7 +319,9 @@ class AlertManager:
         self, source: Optional[str] = None
     ) -> AsyncGenerator[ManagedAlert, None]:
         db_alerts = (
-            DbAlert.all() if source is None else DbAlert.filter(source=source).all()
+            DbAlert.all()
+            if source is None
+            else DbAlert.filter(source=source, source_deleted=False).all()
         )
         async for db_info in db_alerts:
             yield ManagedAlert(db_info)
@@ -338,6 +344,11 @@ class AlertManager:
         self, subscriber: AsyncObserver[ManagedAlert]
     ) -> AsyncDisposable:
         return await self._auxiliary.subscribe_async(subscriber)
+
+    async def mark_source_deleted(self, source: str) -> None:
+        async for db_alert in DbAlert.filter(source=source).all():
+            db_alert.source_deleted = True
+            await db_alert.save()
 
 
 class SubscriberStatus(Enum):
@@ -534,7 +545,7 @@ class SubscriberManager:
             f'Disabled subscriber "{managed_subscriber.name}" (id: {managed_subscriber.id})'
         )
 
-    def get_subscribers(self) -> dict[int, ManagedSubscriber]:
+    def get_subscribers(self) -> Mapping[int, ManagedSubscriber]:
         return self._managed_subscribers
 
     async def _register_subscriber(self, id: int) -> bool:

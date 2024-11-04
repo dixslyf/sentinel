@@ -20,7 +20,7 @@ from sentinel_core.video import (
 from sentinel_core.video.detect import DetectionResult
 
 import sentinel_server.tasks
-from sentinel_server.alert import SubscriptionRegistrar
+from sentinel_server.alert import SubscriptionRegistrar, AlertManager
 from sentinel_server.models import VideoSource as DbVideoSource
 from sentinel_server.plugins import PluginDescriptor, PluginManager
 from sentinel_server.video.detect import ReactiveDetector
@@ -204,9 +204,11 @@ class VideoSourceManager:
     def __init__(
         self,
         plugin_manager: PluginManager,
+        alert_manager: AlertManager,
         subscription_registrar: SubscriptionRegistrar,
     ) -> None:
         self._plugin_manager: PluginManager = plugin_manager
+        self._alert_manager: AlertManager = alert_manager
         self._subscription_registrar: SubscriptionRegistrar = subscription_registrar
         self._video_sources: dict[int, VideoSource] = {}
 
@@ -311,6 +313,8 @@ class VideoSourceManager:
         await vid_src.db_info.delete()
 
         del self._video_sources[id]
+
+        await self._alert_manager.mark_source_deleted(vid_src.name)
 
         logger.info(f'Deleted video source "{vid_src.name}" (id: {id})')
 

@@ -46,12 +46,16 @@ def init_plugin_manager() -> None:
 
 def init_video_source_manager() -> None:
     assert plugin_manager_loaded.is_set()
+    assert alert_manager_loaded.is_set()
     assert subscription_registrar_loaded.is_set()
 
     global video_source_manager
     global plugin_manager
+    global alert_manager
     global subscription_registrar
-    video_source_manager = VideoSourceManager(plugin_manager, subscription_registrar)
+    video_source_manager = VideoSourceManager(
+        plugin_manager, alert_manager, subscription_registrar
+    )
     video_source_manager.add_task_exception_callback(
         lambda ex: logging.error(f"An error occurred: {ex}")
     )

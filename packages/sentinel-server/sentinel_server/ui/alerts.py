@@ -105,7 +105,11 @@ class AlertTable(AsyncObserver[ManagedAlert]):
                     "id": alert.id,
                     "header": alert.header,
                     "description": alert.description,
-                    "source": alert.source,
+                    "source": (
+                        alert.source
+                        if not alert.source_deleted
+                        else f"{alert.source} (deleted)"
+                    ),
                     "timestamp": alert.timestamp,
                 }
             )
