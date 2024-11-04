@@ -18,6 +18,7 @@ class ConfirmationDialog:
         on_yes: Optional[
             Callable[[ClickEventArguments], None | Awaitable[None]]
         ] = None,
+        background: bool = True,
     ) -> None:
         """
         Initialises the confirmation dialog.
@@ -33,22 +34,27 @@ class ConfirmationDialog:
                 Note that the dialog will always close when "Yes" is clicked.
         """
         self.dialog = ui.dialog()
+        self.background: bool = background
 
         async def on_no_wrapper(args: ClickEventArguments) -> None:
             self.close()
             if on_no is not None:
                 if asyncio.iscoroutinefunction(on_no):
                     await on_no(args)
-                else:
+                elif self.background:
                     await run.io_bound(on_no, args)
+                else:
+                    on_no(args)
 
         async def on_yes_wrapper(args: ClickEventArguments) -> None:
             self.close()
             if on_yes is not None:
                 if asyncio.iscoroutinefunction(on_yes):
                     await on_yes(args)
-                else:
+                elif self.background:
                     await run.io_bound(on_yes, args)
+                else:
+                    on_yes(args)
 
         with self.dialog, ui.card().classes("w-2/12 h-1/3 gap-8"):
             ui.markdown(f"**{header}**").classes(

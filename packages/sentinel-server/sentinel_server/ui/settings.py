@@ -244,11 +244,13 @@ class SystemSection:
         restart_confirm_dialog = ConfirmationDialog(
             "Restart Sentinel?",
             on_yes=self._restart,
+            background=False,
         )
 
         shutdown_confirm_dialog = ConfirmationDialog(
             "Shut down Sentinel?",
             on_yes=lambda _: app.shutdown(),
+            background=False,
         )
 
         system_card = ui.card().props("flat")
