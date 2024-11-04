@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Optional
+from typing import Any, Optional, Self
 
 from aioreactive import AsyncDisposable, AsyncObserver
 from nicegui import APIRouter, ui
@@ -458,25 +458,133 @@ class CameraView(AsyncObserver[Frame]):
         raise NotImplementedError
 
 
+class CameraDetails:
+    def __init__(self, vidsrc_id: int):
+        self.vidsrc_id: int = vidsrc_id
+
+        # UI elements
+        # TODO: make this skeleton element larger
+        self.skeleton = ui.skeleton()
+
+        self.id_markdown = ui.markdown()
+        self.name_markdown = ui.markdown()
+        self.enabled_markdown = ui.markdown()
+        self.status_markdown = ui.markdown()
+        self.detect_interval_markdown = ui.markdown()
+
+        self.vidstream_plugin_comp_markdown = ui.markdown()
+        # TODO: use separate markdowns for individual configuration parameters
+        self.vidstream_config_markdown = ui.markdown()
+
+        self.detector_plugin_comp_markdown = ui.markdown()
+        # TODO: use separate markdowns for individual configuration parameters
+        self.detector_config_markdown = ui.markdown()
+
+        # List of all the markdown elements above so that we can iterate over them easily.
+        self._markdown_elements = [
+            self.id_markdown,
+            self.name_markdown,
+            self.enabled_markdown,
+            self.status_markdown,
+            self.detect_interval_markdown,
+            self.vidstream_plugin_comp_markdown,
+            self.vidstream_config_markdown,
+            self.detector_plugin_comp_markdown,
+            self.detector_config_markdown,
+        ]
+
+        # Make all markdown elements invisible first so that we only
+        # show the skeleton element.
+        # They will be made visible once the data has been loaded.
+        for markdown_el in self._markdown_elements:
+            markdown_el.set_visibility(False)
+
+    async def fill_info(self) -> None:
+        await globals.video_source_manager_loaded.wait()
+        await globals.video_source_manager_loaded_from_db.wait()
+
+        vidsrc = globals.video_source_manager.video_sources[self.vidsrc_id]
+
+        # Binding means that the UI element will automatically be updated
+        # when the corresponding video source attribute gets updated.
+        # `backward` is a function applied to the attribute before displaying it
+        # (in this case, `backward` should return markdown).
+        self.id_markdown.bind_content_from(
+            vidsrc, "id", backward=lambda id: f"**ID:** {id}"
+        )
+
+        self.name_markdown.bind_content_from(
+            vidsrc, "name", backward=lambda name: f"**Name:** {name}"
+        )
+
+        self.enabled_markdown.bind_content_from(
+            vidsrc,
+            "Enabled",
+            backward=lambda enabled: f"**Enabled:** {"Yes" if enabled else "No"}",
+        )
+
+        self.status_markdown.bind_content_from(
+            vidsrc,
+            "status",
+            backward=lambda status: f"**Status:** {"OK" if status == VideoSourceStatus.Ok else "Error"}",
+        )
+
+        self.detect_interval_markdown.bind_content_from(
+            vidsrc,
+            "detect_interval",
+            backward=lambda detect_interval: f"**Detect Interval:** {detect_interval} {"second" if detect_interval == 1 else "seconds"}",
+        )
+
+        self.vidstream_plugin_comp_markdown.bind_content_from(
+            vidsrc,
+            "vidstream_plugin_name",
+            backward=lambda vidstream_plugin_name: f"**Video stream type:** {vidstream_plugin_name} / {vidsrc.vidstream_component_name}",
+        )
+
+        self.vidstream_config_markdown.bind_content_from(
+            vidsrc,
+            "vidstream_config",
+            backward=lambda vidstream_config: f"**Video stream configuration:** {vidstream_config}",
+        )
+
+        self.detector_plugin_comp_markdown.bind_content_from(
+            vidsrc,
+            "detector_plugin_name",
+            backward=lambda detector_plugin_name: f"**Detector type:** {detector_plugin_name} / {vidsrc.detector_component_name}",
+        )
+
+        self.detector_config_markdown.bind_content_from(
+            vidsrc,
+            "detector_config",
+            backward=lambda detector_config: f"**Detector configuration:** {detector_config}",
+        )
+
+        # Once ready, hide the skeleton and show all markdown elements.
+        self.skeleton.set_visibility(False)
+        for markdown_el in self._markdown_elements:
+            markdown_el.set_visibility(True)
+
+
 @router.page("/cameras/{id}")
 async def camera_view_page(id: int) -> None:
     sentinel_server.ui.add_global_style()
     sentinel_server.ui.pages_shared()
 
     with ui.element("div").classes("w-full flex h-3/5"):
-        with ui.element("div").classes("w-4/5 border-2 border-red-400"):
-            ui.label(f"camera {id}")
-
+        with ui.element("div").classes("w-3/5 border-2 border-red-400"):
+            ui.label("Live Feed")
             camera_view = CameraView(id)
 
-        with ui.element("div").classes("w-1/5 border-2 border-blue-400"):
+        with ui.element("div").classes("w-2/5 border-2 border-blue-400"):
             ui.label("Camera details")
+            camera_details = CameraDetails(id)
 
     with ui.element("div").classes("w-full border-2 border-purple-400"):
         alert_table = AlertTable(source_id=id)
 
     await ui.context.client.connected()
     await camera_view.start_capture()
+    await camera_details.fill_info()
     await alert_table.refresh()
     await alert_table.register()
 
