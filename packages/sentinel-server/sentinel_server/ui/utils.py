@@ -1,6 +1,7 @@
-from typing import Callable, Optional
+import asyncio
+from typing import Awaitable, Callable, Optional
 
-from nicegui import ui
+from nicegui import run, ui
 from nicegui.events import ClickEventArguments
 
 
@@ -13,8 +14,10 @@ class ConfirmationDialog:
         self,
         body: str,
         header: str = "Confirmation",
-        on_no: Optional[Callable[[ClickEventArguments], None]] = None,
-        on_yes: Optional[Callable[[ClickEventArguments], None]] = None,
+        on_no: Optional[Callable[[ClickEventArguments], None | Awaitable[None]]] = None,
+        on_yes: Optional[
+            Callable[[ClickEventArguments], None | Awaitable[None]]
+        ] = None,
     ) -> None:
         """
         Initialises the confirmation dialog.
@@ -22,24 +25,30 @@ class ConfirmationDialog:
         Parameters:
             body (str): The main message displayed in the dialog.
             header (str): The header/title of the dialog, by default "Confirmation".
-            on_no (Optional[Callable[[nicegui.elements.button.Button], None]]):
+            on_no (Optional[Callable[[ClickEventArguments], None | Awaitable[None]]]):
                 A callback function to execute when the "No" button is clicked, by default None.
                 Note that the dialog will always close when "No" is clicked.
-            on_yes (Optional[Callable[[nicegui.elements.button.Button], None]]):
+            on_yes (Optional[Callable[[ClickEventArguments], None | Awaitable[None]]]):
                 A callback function to execute when the "Yes" button is clicked, by default None.
                 Note that the dialog will always close when "Yes" is clicked.
         """
         self.dialog = ui.dialog()
 
-        def on_no_wrapper(args: ClickEventArguments) -> None:
+        async def on_no_wrapper(args: ClickEventArguments) -> None:
+            self.close()
             if on_no is not None:
-                on_no(args)
-            self.close()
+                if asyncio.iscoroutinefunction(on_no):
+                    await on_no(args)
+                else:
+                    await run.io_bound(on_no, args)
 
-        def on_yes_wrapper(args: ClickEventArguments) -> None:
-            if on_yes is not None:
-                on_yes(args)
+        async def on_yes_wrapper(args: ClickEventArguments) -> None:
             self.close()
+            if on_yes is not None:
+                if asyncio.iscoroutinefunction(on_yes):
+                    await on_yes(args)
+                else:
+                    await run.io_bound(on_yes, args)
 
         with self.dialog, ui.card().classes("w-2/12 h-1/3 gap-8"):
             ui.markdown(f"**{header}**").classes(
