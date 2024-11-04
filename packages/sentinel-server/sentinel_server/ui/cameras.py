@@ -1,12 +1,16 @@
 import logging
-from typing import Any, Optional, Self
+from typing import Any, Optional
 
 from aioreactive import AsyncDisposable, AsyncObserver
 from nicegui import APIRouter, ui
 from nicegui.element import Element
 from nicegui.elements.input import Input
 from nicegui.elements.select import Select
-from nicegui.events import GenericEventArguments, ValueChangeEventArguments
+from nicegui.events import (
+    ClickEventArguments,
+    GenericEventArguments,
+    ValueChangeEventArguments,
+)
 from PIL import Image
 from sentinel_core.plugins import ComponentArgDescriptor, ComponentDescriptor
 from sentinel_core.video import Frame
@@ -15,6 +19,7 @@ import sentinel_server.globals as globals
 import sentinel_server.tasks
 import sentinel_server.ui
 from sentinel_server.ui.alerts import AlertTable
+from sentinel_server.ui.utils import ConfirmationDialog
 from sentinel_server.video import VideoSource, VideoSourceStatus
 from sentinel_server.video.detect import ReactiveDetectionVisualiser
 
@@ -565,6 +570,26 @@ class CameraDetails:
             markdown_el.set_visibility(True)
 
 
+class CameraDeleteButton:
+    def __init__(self, vidsrc_id: int) -> None:
+        self.vidsrc_id = vidsrc_id
+
+        self.confirm_dialog = ConfirmationDialog(
+            f"Delete video source with ID {vidsrc_id}?", on_yes=self._delete_camera
+        )
+        self.button = ui.button("Delete", on_click=self._on_click)
+
+    def _on_click(self, args: ClickEventArguments) -> None:
+        self.confirm_dialog.open()
+
+    async def _delete_camera(self, args: ClickEventArguments) -> None:
+        await globals.video_source_manager_loaded.wait()
+        await globals.video_source_manager_loaded_from_db.wait()
+
+        await globals.video_source_manager.remove_video_source(self.vidsrc_id)
+        ui.navigate.to("/cameras")
+
+
 @router.page("/cameras/{id}")
 async def camera_view_page(id: int) -> None:
     sentinel_server.ui.add_global_style()
@@ -581,6 +606,8 @@ async def camera_view_page(id: int) -> None:
 
     with ui.element("div").classes("w-full border-2 border-purple-400"):
         alert_table = AlertTable(source_id=id)
+
+    delete_button = CameraDeleteButton(id)
 
     await ui.context.client.connected()
     await camera_view.start_capture()
