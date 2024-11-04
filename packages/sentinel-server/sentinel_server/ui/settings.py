@@ -1,9 +1,10 @@
 import logging
 import os
+from typing import Any
 
 import nicegui
 from nicegui import APIRouter, app, run, ui
-from nicegui.events import GenericEventArguments
+from nicegui.events import ClickEventArguments, GenericEventArguments
 
 import sentinel_server.auth
 import sentinel_server.globals as globals
@@ -20,7 +21,7 @@ class PluginTable:
     Represents a table of plugins.
     """
 
-    columns = [
+    columns: list[dict[str, Any]] = [
         {
             "name": "name",
             "label": "Name",
@@ -146,7 +147,7 @@ class PluginsSection:
 
 
 class AuthenticationSection:
-    def __init__(self):
+    def __init__(self) -> None:
         auth_card = ui.card().classes("w-full border-b-2 border-gray-100").props("flat")
         with auth_card:
             ui.label("User Authentication").classes("text-3xl font-bold text-[#4a4e69]")
@@ -215,9 +216,7 @@ class AuthenticationSection:
                             .props("no-caps")
                         )
 
-    async def username_update_button_on_click(
-        self, button: nicegui.elements.button.Button
-    ):
+    async def username_update_button_on_click(self, args: ClickEventArguments) -> None:
         if not self.username_input.validate():
             return
 
@@ -227,9 +226,7 @@ class AuthenticationSection:
 
         ui.notify("Updated username!")
 
-    async def password_update_button_on_click(
-        self, button: nicegui.elements.button.Button
-    ):
+    async def password_update_button_on_click(self, args: ClickEventArguments) -> None:
         if (
             not self.password_input.validate()
             or not self.password_confirm_input.validate()
@@ -266,7 +263,7 @@ class SystemSection:
                     "text-md text-[#cad3f5] bg-black rounded-xl hover:bg-gray-500"
                 ).props("no-caps")
 
-    def _restart(self, button: nicegui.elements.button.Button) -> None:
+    def _restart(self, args: ClickEventArguments) -> None:
         # Log the user out, but don't explicitly redirect to the login page.
         # Once the restart is done, NiceGUI should automatically redirect to the login page.
         app.storage.user.update({"authenticated": False})
