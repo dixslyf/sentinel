@@ -145,7 +145,8 @@ async def alerts_page():
     sentinel_server.ui.add_global_style()
     sentinel_server.ui.pages_shared()
 
-    with ui.element("div").classes("flex justify-center text-center w-full mt-10"):
+    ui.label("Alerts").classes("px-5 py-2 text-4xl font-bold text-[#4a4e69] border-b-2 border-gray-200 w-full")
+    with ui.element("div").classes("flex justify-center text-center w-full mt-5"):
         alert_table = AlertTable()
 
     await alert_table.refresh()

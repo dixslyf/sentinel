@@ -264,11 +264,11 @@ async def devices_page() -> None:
     sentinel_server.ui.add_global_style()
     sentinel_server.ui.pages_shared()
 
-    # ui.label("Devices")
-    with ui.element("div").classes(
-        "w-full flex flex-col gap-5 justify-center text-center mt-10"
-    ):
 
+    with ui.element("div").classes(
+        "w-full flex flex-col gap-5"
+    ):
+        ui.label("Devices").classes("px-5 py-2 text-4xl font-bold text-[#4a4e69] border-b-2 border-gray-200")
         with ui.element("div").classes("flex justify-center text-center"):
             table = DeviceTable()
             dialog = AddDeviceDialog(table)
@@ -391,10 +391,9 @@ async def device_view_page(id: int) -> None:
     sentinel_server.ui.add_global_style()
     sentinel_server.ui.pages_shared()
 
-    # TODO: redo UI
-    with ui.element("div").classes("w-full flex h-3/5"):
+    with ui.element("div").classes("w-full flex flex-col"):
+        ui.label("Device Details").classes("px-5 py-2 text-4xl font-bold text-[#4a4e69] border-b-2 border-gray-200")
         with ui.element("div").classes("border-2 border-blue-400"):
-            ui.label("Device details")
             device_details = DeviceDetails(id)
 
     DeviceDeleteButton(id)

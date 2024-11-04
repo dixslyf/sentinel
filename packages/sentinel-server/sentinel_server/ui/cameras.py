@@ -403,9 +403,9 @@ async def cameras_page() -> None:
 
     # ui design for cameras page
     with ui.element("div").classes(
-        "camera_wrapper w-full flex flex-col gap-5 justify-center text-center mt-10"
+        "camera_wrapper w-full flex flex-col gap-5"
     ):
-
+        ui.label("Cameras").classes("px-5 py-2 text-4xl font-bold text-[#4a4e69] border-b-2 border-gray-200")
         with ui.element("div").classes("flex justify-center text-center"):
             table = CameraTable()
             dialog = AddCameraDialog(table)
