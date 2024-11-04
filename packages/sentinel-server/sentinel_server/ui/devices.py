@@ -4,12 +4,17 @@ from typing import Any
 from nicegui import APIRouter, ui
 from nicegui.elements.input import Input
 from nicegui.elements.select import Select
-from nicegui.events import GenericEventArguments, ValueChangeEventArguments
+from nicegui.events import (
+    ClickEventArguments,
+    GenericEventArguments,
+    ValueChangeEventArguments,
+)
 
 import sentinel_server.globals as globals
 import sentinel_server.tasks
 import sentinel_server.ui
 from sentinel_server.alert import ManagedSubscriber, SubscriberStatus
+from sentinel_server.ui.utils import ConfirmationDialog
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +44,7 @@ class DeviceTable:
         },
         {"name": "status", "label": "Status", "field": "status"},
         {"name": "enabled", "label": "Enabled", "field": "enabled"},
+        {"name": "view", "label": "", "field": "view"},
     ]
 
     def __init__(self) -> None:
@@ -58,6 +64,14 @@ class DeviceTable:
             + "</q-td>",
         )
         self.table.on("update_enabled", self.update_enabled_handler)
+
+        # Link for view.
+        self.table.add_slot(
+            "body-cell-view",
+            '<q-td :props="props">\n'
+            + "   <a :href=\"'devices/' + props.row.id\">{{props.row.view}}</a>"
+            + "</q-td>",
+        )
 
     async def update_enabled_handler(self, msg: GenericEventArguments):
         """
@@ -104,6 +118,7 @@ class DeviceTable:
                     "plugin_component": f"{sub.plugin_name} / {sub.component_name}",
                     "status": "OK" if sub.status == SubscriberStatus.Ok else "Error",
                     "enabled": sub.enabled,
+                    "view": "View",
                 }
             )
 
@@ -267,3 +282,122 @@ async def devices_page() -> None:
     # Wait for the page to load before refreshing the table.
     await ui.context.client.connected()
     await table.refresh()
+
+
+class DeviceDetails:
+    def __init__(self, subscriber_id: int):
+        self.subscriber_id: int = subscriber_id
+
+        # UI elements
+        # TODO: make this skeleton element larger
+        self.skeleton = ui.skeleton()
+
+        self.id_markdown = ui.markdown()
+        self.name_markdown = ui.markdown()
+        self.enabled_markdown = ui.markdown()
+        self.status_markdown = ui.markdown()
+
+        self.plugin_comp_markdown = ui.markdown()
+        # TODO: use separate markdowns for individual configuration parameters
+        self.config_markdown = ui.markdown()
+
+        # List of all the markdown elements above so that we can iterate over them easily.
+        self._markdown_elements = [
+            self.id_markdown,
+            self.name_markdown,
+            self.enabled_markdown,
+            self.status_markdown,
+            self.plugin_comp_markdown,
+            self.config_markdown,
+        ]
+
+        # Make all markdown elements invisible first so that we only
+        # show the skeleton element.
+        # They will be made visible once the data has been loaded.
+        for markdown_el in self._markdown_elements:
+            markdown_el.set_visibility(False)
+
+    async def fill_info(self) -> None:
+        await globals.subscriber_manager_loaded.wait()
+        await globals.subscriber_manager_loaded_from_db.wait()
+
+        managed_subscribers = globals.subscriber_manager.get_subscribers()
+        managed_subscriber = managed_subscribers[self.subscriber_id]
+
+        # Binding means that the UI element will automatically be updated
+        # when the corresponding video source attribute gets updated.
+        # `backward` is a function applied to the attribute before displaying it
+        # (in this case, `backward` should return markdown).
+        self.id_markdown.bind_content_from(
+            managed_subscriber, "id", backward=lambda id: f"**ID:** {id}"
+        )
+
+        self.name_markdown.bind_content_from(
+            managed_subscriber, "name", backward=lambda name: f"**Name:** {name}"
+        )
+
+        self.enabled_markdown.bind_content_from(
+            managed_subscriber,
+            "Enabled",
+            backward=lambda enabled: f"**Enabled:** {"Yes" if enabled else "No"}",
+        )
+
+        self.status_markdown.bind_content_from(
+            managed_subscriber,
+            "status",
+            backward=lambda status: f"**Status:** {"OK" if status == SubscriberStatus.Ok else "Error"}",
+        )
+
+        self.plugin_comp_markdown.bind_content_from(
+            managed_subscriber,
+            "plugin_name",
+            backward=lambda plugin_name: f"**Type:** {plugin_name} / {managed_subscriber.component_name}",
+        )
+
+        self.config_markdown.bind_content_from(
+            managed_subscriber,
+            "config",
+            backward=lambda config: f"**Configuration:** {config if config else "None"}",
+        )
+
+        # Once ready, hide the skeleton and show all markdown elements.
+        self.skeleton.set_visibility(False)
+        for markdown_el in self._markdown_elements:
+            markdown_el.set_visibility(True)
+
+
+class DeviceDeleteButton:
+    def __init__(self, vidsrc_id: int) -> None:
+        self.vidsrc_id = vidsrc_id
+
+        self.confirm_dialog = ConfirmationDialog(
+            f"Delete device with ID {vidsrc_id}?", on_yes=self._delete_device
+        )
+        self.button = ui.button("Delete", on_click=self._on_click)
+
+    def _on_click(self, args: ClickEventArguments) -> None:
+        self.confirm_dialog.open()
+
+    async def _delete_device(self, args: ClickEventArguments) -> None:
+        await globals.subscriber_manager_loaded.wait()
+        await globals.subscriber_manager_loaded_from_db.wait()
+
+        await globals.subscriber_manager.remove_subscriber(self.vidsrc_id)
+        ui.navigate.to("/devices")
+
+
+@router.page("/devices/{id}")
+async def device_view_page(id: int) -> None:
+    sentinel_server.ui.add_global_style()
+    sentinel_server.ui.pages_shared()
+
+    # TODO: redo UI
+    with ui.element("div").classes("w-full flex h-3/5"):
+        with ui.element("div").classes("border-2 border-blue-400"):
+            ui.label("Device details")
+            device_details = DeviceDetails(id)
+
+    DeviceDeleteButton(id)
+
+    await ui.context.client.connected()
+    await device_details.fill_info()
