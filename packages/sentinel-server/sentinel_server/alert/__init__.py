@@ -4,7 +4,7 @@ import typing
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Any, AsyncGenerator, Optional, Self
+from typing import Any, AsyncGenerator, Optional, Self, Sequence
 
 from aioreactive import AsyncDisposable, AsyncObservable, AsyncObserver, AsyncSubject
 from sentinel_core.alert import Alert, AsyncSubscriber, Emitter, SyncSubscriber
@@ -468,6 +468,20 @@ class SubscriberManager:
         self._managed_subscribers[db_subscriber.id] = managed_subscriber
         logger.info(f'Created subscriber for "{managed_subscriber.name}"')
 
+    async def remove_subscriber(self, id: int) -> bool:
+        managed_subscriber = self._managed_subscribers.get(id)
+        if managed_subscriber is None:
+            return False
+
+        await self.disable_subscriber(id)
+        await managed_subscriber.db_info.delete()
+
+        del self._managed_subscribers[id]
+
+        logger.info(f'Deleted subscriber "{managed_subscriber.name}" (id: {id})')
+
+        return True
+
     async def enable_subscriber(self, id: int) -> None:
         managed_subscriber = self._managed_subscribers[id]
 
@@ -496,6 +510,9 @@ class SubscriberManager:
         logger.info(
             f'Disabled subscriber "{managed_subscriber.name}" (id: {managed_subscriber.id})'
         )
+
+    def get_subscribers(self) -> Sequence[ManagedSubscriber]:
+        return self._managed_subscribers
 
     async def _register_subscriber(self, id: int) -> bool:
         managed_subscriber = self._managed_subscribers[id]
