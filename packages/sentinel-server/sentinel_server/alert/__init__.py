@@ -534,7 +534,7 @@ class SubscriberManager:
             f'Disabled subscriber "{managed_subscriber.name}" (id: {managed_subscriber.id})'
         )
 
-    def get_subscribers(self) -> Sequence[ManagedSubscriber]:
+    def get_subscribers(self) -> dict[int, ManagedSubscriber]:
         return self._managed_subscribers
 
     async def _register_subscriber(self, id: int) -> bool:
