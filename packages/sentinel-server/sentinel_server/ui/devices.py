@@ -42,7 +42,7 @@ class DeviceTable:
             "label": "Plugin / Component",
             "field": "plugin_component",
         },
-        {"name": "status", "label": "Status", "field": "status"},
+        {"name": "status", "label": "Status", "field": "status", "align": "center"},
         {"name": "enabled", "label": "Enabled", "field": "enabled"},
         {"name": "view", "label": "", "field": "view"},
     ]
