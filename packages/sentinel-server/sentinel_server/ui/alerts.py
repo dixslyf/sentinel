@@ -6,8 +6,8 @@ from aioreactive import AsyncDisposable, AsyncObserver
 from nicegui import APIRouter, ui
 
 import sentinel_server.globals as globals
-import sentinel_server.ui
 from sentinel_server.alert import ManagedAlert
+from sentinel_server.ui import SharedPageLayout
 
 router = APIRouter()
 
@@ -83,7 +83,7 @@ class AlertTable(AsyncObserver[ManagedAlert]):
                 },
             )
             .props("loading")
-            .classes("w-11/12 border-2 border-gray-100")
+            .classes("w-full border-2 border-gray-100")
             .props("table-header-style='background-color: #f0f0f0'")
             .props("flat")
         )
@@ -168,13 +168,7 @@ class AlertTable(AsyncObserver[ManagedAlert]):
 
 @router.page("/alerts")
 async def alerts_page():
-    sentinel_server.ui.add_global_style()
-    sentinel_server.ui.pages_shared()
-
-    ui.label("Alerts").classes(
-        "px-5 py-2 text-4xl font-bold text-[#4a4e69] border-b-2 border-gray-200 w-full"
-    )
-    with ui.element("div").classes("flex justify-center text-center w-full mt-5"):
+    with SharedPageLayout("Alerts"):
         alert_table = AlertTable()
 
     await ui.context.client.connected()

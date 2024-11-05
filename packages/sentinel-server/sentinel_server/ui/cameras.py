@@ -1,4 +1,3 @@
-import copy
 import logging
 from typing import Any, Optional
 
@@ -17,8 +16,7 @@ from sentinel_core.plugins import ComponentArgDescriptor, ComponentDescriptor
 from sentinel_core.video import Frame
 
 import sentinel_server.globals as globals
-import sentinel_server.tasks
-import sentinel_server.ui
+from sentinel_server.ui import SharedPageLayout
 from sentinel_server.ui.alerts import AlertTable
 from sentinel_server.ui.utils import ConfirmationDialog
 from sentinel_server.video import VideoSource, VideoSourceStatus
@@ -73,7 +71,7 @@ class CameraTable:
             "name": "enabled",
             "label": "Enabled",
             "field": "enabled",
-            "align": "middle",
+            "align": "center",
         },
         {"name": "view", "label": "", "field": "view"},
     ]
@@ -101,7 +99,7 @@ class CameraTable:
                 },
             )
             .props("loading")
-            .classes("camera_table w-11/12 border-2 border-gray-100")
+            .classes("camera_table w-11/12 border-2 border-gray-100 w-full")
             .props("table-header-style='background-color: #f0f0f0'")
             .props("flat")
         )
@@ -426,35 +424,6 @@ class AddCameraDialog:
         self.close()
 
 
-@router.page("/cameras")
-async def cameras_page() -> None:
-    sentinel_server.ui.add_global_style()
-    sentinel_server.ui.pages_shared()
-
-    # ui design for cameras page
-    with ui.element("div").classes("camera_wrapper w-full flex flex-col gap-5"):
-        ui.label("Cameras").classes(
-            "px-5 py-2 text-4xl font-bold text-[#4a4e69] border-b-2 border-gray-200"
-        )
-        with ui.element("div").classes("flex justify-center text-center"):
-            table = CameraTable()
-            dialog = AddCameraDialog(table)
-
-        with ui.element("div").classes("w-full flex justify-center"):
-            with ui.element("div").classes("w-11/12 flex justify-end"):
-                ui.button("Add", on_click=dialog.open).classes(
-                    "bg-black rounded-xl py-1 px-3 text-[#cad3f5]"
-                ).props("no-caps")
-
-    # Wait for the page to load before refreshing the table.
-    await ui.context.client.connected()
-    await table.refresh()
-    await table.register_status_changes()
-
-    await ui.context.client.disconnected()
-    await table.deregister_status_changes()
-
-
 class CameraView(AsyncObserver[Frame]):
     def __init__(self, id: int):
         self.id = id
@@ -498,22 +467,24 @@ class CameraDetails:
         self.vidsrc_id: int = vidsrc_id
 
         # UI elements
-        # TODO: make this skeleton element larger
-        self.skeleton = ui.skeleton()
+        # TODO: something feels off with the layout here.
+        with ui.element("div"):
+            # TODO: make this skeleton element larger
+            self.skeleton = ui.skeleton()
 
-        self.id_markdown = ui.markdown()
-        self.name_markdown = ui.markdown()
-        self.enabled_markdown = ui.markdown()
-        self.status_markdown = ui.markdown()
-        self.detect_interval_markdown = ui.markdown()
+            self.id_markdown = ui.markdown()
+            self.name_markdown = ui.markdown()
+            self.enabled_markdown = ui.markdown()
+            self.status_markdown = ui.markdown()
+            self.detect_interval_markdown = ui.markdown()
 
-        self.vidstream_plugin_comp_markdown = ui.markdown()
-        # TODO: use separate markdowns for individual configuration parameters
-        self.vidstream_config_markdown = ui.markdown()
+            self.vidstream_plugin_comp_markdown = ui.markdown()
+            # TODO: use separate markdowns for individual configuration parameters
+            self.vidstream_config_markdown = ui.markdown()
 
-        self.detector_plugin_comp_markdown = ui.markdown()
-        # TODO: use separate markdowns for individual configuration parameters
-        self.detector_config_markdown = ui.markdown()
+            self.detector_plugin_comp_markdown = ui.markdown()
+            # TODO: use separate markdowns for individual configuration parameters
+            self.detector_config_markdown = ui.markdown()
 
         # List of all the markdown elements above so that we can iterate over them easily.
         self._markdown_elements = [
@@ -622,29 +593,48 @@ class CameraDeleteButton:
         ui.navigate.to("/cameras")
 
 
+@router.page("/cameras")
+async def cameras_page() -> None:
+    with SharedPageLayout("Cameras"):
+        with ui.element("div").classes("flex flex-col gap-2"):
+            table = CameraTable()
+            dialog = AddCameraDialog(table)
+
+            with ui.element("div").classes("w-full flex justify-end"):
+                ui.button("Add", on_click=dialog.open).classes(
+                    "bg-black rounded-xl py-1 px-3 text-[#cad3f5]"
+                ).props("no-caps")
+
+    # Wait for the page to load before refreshing the table.
+    await ui.context.client.connected()
+    await table.refresh()
+    await table.register_status_changes()
+
+    await ui.context.client.disconnected()
+    await table.deregister_status_changes()
+
+
 @router.page("/cameras/{id}")
 async def camera_view_page(id: int) -> None:
-    sentinel_server.ui.add_global_style()
-    sentinel_server.ui.pages_shared()
+    with SharedPageLayout("Cameras"):
+        with ui.element("div").classes("w-full flex h-2/5"):
+            with ui.element("div").classes("w-3/5 border-r-2 border-gray-200"):
+                ui.label("Live Feed").classes("text-2xl font-bold text-[#4a4e69] pl-5")
+                camera_view = CameraView(id)
 
-    with ui.element("div").classes("w-full flex h-2/5"):
-        with ui.element("div").classes("w-3/5 border-r-2 border-gray-200"):
-            ui.label("Live Feed").classes("text-2xl font-bold text-[#4a4e69] pl-5")
-            camera_view = CameraView(id)
+            with ui.element("div").classes("w-2/5 pl-5"):
+                ui.label("Camera details").classes("text-2xl font-bold text-[#4a4e69]")
+                camera_details = CameraDetails(id)
 
-        with ui.element("div").classes("w-2/5 pl-5"):
-            ui.label("Camera details").classes("text-2xl font-bold text-[#4a4e69]")
-            camera_details = CameraDetails(id)
+        with ui.element("div").classes(
+            "w-full flex flex-col border-t-2 border-gray-200 pt-5"
+        ):
+            ui.label("Logs").classes("text-2xl font-bold text-[#4a4e69] pl-5 pb-3")
+            with ui.element("div").classes("flex justify-center w-full"):
+                alert_table = AlertTable(source_id=id)
 
-    with ui.element("div").classes(
-        "w-full flex flex-col border-t-2 border-gray-200 pt-5"
-    ):
-        ui.label("Logs").classes("text-2xl font-bold text-[#4a4e69] pl-5 pb-3")
-        with ui.element("div").classes("flex justify-center w-full"):
-            alert_table = AlertTable(source_id=id)
-
-    with ui.element("div").classes("w-full flex justify-end px-5 pb-5"):
-        delete_button = CameraDeleteButton(id)
+        with ui.element("div").classes("w-full flex justify-end px-5 pb-5"):
+            delete_button = CameraDeleteButton(id)
 
     await ui.context.client.connected()
     await camera_view.start_capture()

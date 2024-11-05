@@ -12,8 +12,8 @@ from nicegui.events import (
 
 import sentinel_server.globals as globals
 import sentinel_server.tasks
-import sentinel_server.ui
 from sentinel_server.alert import ManagedSubscriber, SubscriberStatus
+from sentinel_server.ui import SharedPageLayout
 from sentinel_server.ui.utils import ConfirmationDialog
 
 logger = logging.getLogger(__name__)
@@ -41,9 +41,10 @@ class DeviceTable:
             "name": "plugin_component",
             "label": "Plugin / Component",
             "field": "plugin_component",
+            "align": "left",
         },
         {"name": "status", "label": "Status", "field": "status", "align": "center"},
-        {"name": "enabled", "label": "Enabled", "field": "enabled"},
+        {"name": "enabled", "label": "Enabled", "field": "enabled", "align": "center"},
         {"name": "view", "label": "", "field": "view"},
     ]
 
@@ -70,7 +71,7 @@ class DeviceTable:
                 },
             )
             .props("loading")
-            .classes("w-11/12 border-2 border-gray-100")
+            .classes("w-11/12 border-2 border-gray-100 w-full")
             .props("table-header-style='background-color: #f0f0f0'")
             .props("flat")
         )
@@ -288,30 +289,6 @@ class AddDeviceDialog:
         self.close()
 
 
-@router.page("/devices")
-async def devices_page() -> None:
-    sentinel_server.ui.add_global_style()
-    sentinel_server.ui.pages_shared()
-
-    with ui.element("div").classes("w-full flex flex-col gap-5"):
-        ui.label("Devices").classes(
-            "px-5 py-2 text-4xl font-bold text-[#4a4e69] border-b-2 border-gray-200"
-        )
-        with ui.element("div").classes("flex justify-center text-center"):
-            table = DeviceTable()
-            dialog = AddDeviceDialog(table)
-
-        with ui.element("div").classes("w-full flex justify-center"):
-            with ui.element("div").classes("w-11/12 flex justify-end"):
-                ui.button("Add", on_click=dialog.open).classes(
-                    "bg-black rounded-xl py-1 px-3 text-[#cad3f5]"
-                ).props("no-caps")
-
-    # Wait for the page to load before refreshing the table.
-    await ui.context.client.connected()
-    await table.refresh()
-
-
 class DeviceDetails:
     def __init__(self, subscriber_id: int):
         self.subscriber_id: int = subscriber_id
@@ -418,23 +395,39 @@ class DeviceDeleteButton:
         ui.navigate.to("/devices")
 
 
+@router.page("/devices")
+async def devices_page() -> None:
+    with SharedPageLayout("Devices"):
+        with ui.element("div").classes("flex flex-col gap-2"):
+            table = DeviceTable()
+            dialog = AddDeviceDialog(table)
+
+            with ui.element("div").classes("w-full flex justify-end"):
+                ui.button("Add", on_click=dialog.open).classes(
+                    "bg-black rounded-xl py-1 px-3 text-[#cad3f5]"
+                ).props("no-caps")
+
+    # Wait for the page to load before refreshing the table.
+    await ui.context.client.connected()
+    await table.refresh()
+
+
 @router.page("/devices/{id}")
 async def device_view_page(id: int) -> None:
-    sentinel_server.ui.add_global_style()
-    sentinel_server.ui.pages_shared()
+    with SharedPageLayout("Devices"):
+        # TODO: need to revisit this
+        with ui.element("div").classes("w-full flex flex-col"):
+            ui.label("Device Details").classes(
+                "px-5 py-2 text-4xl font-bold text-[#4a4e69] border-b-2 border-gray-200"
+            )
 
-    with ui.element("div").classes("w-full flex flex-col"):
-        ui.label("Device Details").classes(
-            "px-5 py-2 text-4xl font-bold text-[#4a4e69] border-b-2 border-gray-200"
-        )
-
-        with ui.element("div").classes(
-            "flex justify-center mt-5 border-b-2 border-gray-200 w-full"
-        ):
-            with ui.element("div").classes("flex flex-col"):
-                device_details = DeviceDetails(id)
-        with ui.element("div").classes("flex justify-end mr-5 mt-5"):
-            DeviceDeleteButton(id)
+            with ui.element("div").classes(
+                "flex justify-center mt-5 border-b-2 border-gray-200 w-full"
+            ):
+                with ui.element("div").classes("flex flex-col"):
+                    device_details = DeviceDetails(id)
+            with ui.element("div").classes("flex justify-end mr-5 mt-5"):
+                DeviceDeleteButton(id)
 
     await ui.context.client.connected()
     await device_details.fill_info()

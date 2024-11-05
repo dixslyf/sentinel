@@ -2,10 +2,12 @@ import logging
 
 from aioreactive import AsyncObserver
 from nicegui import APIRouter, ui
+from nicegui.element import Element
+from nicegui.elements.card import Card
 
 import sentinel_server.globals as globals
-import sentinel_server.ui
 from sentinel_server.alert import ManagedAlert
+from sentinel_server.ui import SharedPageLayout
 from sentinel_server.ui.alerts import AlertTable
 from sentinel_server.ui.cameras import CameraTable
 from sentinel_server.ui.devices import DeviceTable
@@ -73,44 +75,50 @@ class StatisticsDashboardChart(AsyncObserver[ManagedAlert]):
         raise NotImplementedError
 
 
-@router.page("/dashboard")
-async def dashboard_page() -> None:
-    sentinel_server.ui.add_global_style()
-    sentinel_server.ui.pages_shared()
-    ui.label("Dashboard").classes(
-        "px-5 py-2 text-4xl font-bold text-[#4a4e69] border-b-2 border-gray-200 w-full"
+def _grid() -> Element:
+    return ui.element("div").classes(
+        f"grid grid-cols-2 gap-{SharedPageLayout.CONTAINER_PADDING} justify-items-stretch"
     )
 
-    with ui.element("div").classes("w-full flex flex-col items-center"):
-        with ui.element("div").classes("flex w-full gap-10 justify-center mt-5"):
-            with ui.card().classes(
-                "w-2/5 border-2 border-gray-100 rounded-lg shadow-md p-6 hover:shadow-lg hover:scale-105 transform transition dutraion-300"
-            ):
-                ui.label("Cameras").classes("text-xl font-bold text-[#4a4e69]")
-                with ui.element("div").classes("w-full flex justify-center"):
-                    camera_table = CameraTable(condensed=True)
 
-            with ui.card().classes(
-                "w-2/5 border-2 border-gray-100 rounded-lg shadow-md p-6 hover:shadow-lg hover:scale-105 transform transition dutraion-300"
-            ):
-                ui.label("Devices").classes("text-xl font-bold text-[#4a4e69]")
-                with ui.element("div").classes("w-full flex justify-center"):
-                    device_table = DeviceTable(condensed=True)
+def _card_container(title: str) -> Card:
+    card = ui.card().classes(
+        " ".join(
+            (
+                "flex",
+                "flex-col",
+                "border-2",
+                "border-gray-100",
+                "rounded-lg",
+                "shadow-md",
+                "p-6",
+                "hover:shadow-lg",
+                "hover:scale-105",
+                "transform",
+                "transition",
+                "duration-200",
+            )
+        )
+    )
 
-        with ui.element("div").classes("flex w-full gap-10 justify-center mt-5"):
-            with ui.card().classes(
-                "w-2/5 border-2 border-gray-100 rounded-lg shadow-md p-6 hover:shadow-lg hover:scale-105 transform transition dutraion-300"
-            ):
-                ui.label("Alerts").classes("text-xl font-bold text-[#4a4e69]")
-                with ui.element("div").classes("w-full flex justify-center"):
-                    alert_table = AlertTable(condensed=True)
+    with card:
+        ui.label(title).classes("text-xl font-bold text-[#4a4e69]")
 
-            with ui.card().classes(
-                "w-2/5 border-2 border-gray-100 rounded-lg shadow-md p-6 hover:shadow-lg hover:scale-105 transform transition dutraion-300"
-            ):
-                ui.label("Statistics").classes("text-xl font-bold text-[#4a4e69]")
-                with ui.element("div").classes("w-full flex justify-center"):
-                    statistic_chart = StatisticsDashboardChart()
+    return card
+
+
+@router.page("/dashboard")
+async def dashboard_page() -> None:
+    with SharedPageLayout("Dashboard"):
+        with _grid():
+            with _card_container("Cameras"):
+                camera_table = CameraTable(condensed=True)
+            with _card_container("Devices"):
+                device_table = DeviceTable(condensed=True)
+            with _card_container("Alerts"):
+                alert_table = AlertTable(condensed=True)
+            with _card_container("Statistics"):
+                statistic_chart = StatisticsDashboardChart()
 
     await ui.context.client.connected()
 

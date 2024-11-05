@@ -2,13 +2,12 @@ import logging
 import os
 from typing import Any
 
-import nicegui
 from nicegui import APIRouter, app, run, ui
 from nicegui.events import ClickEventArguments, GenericEventArguments
 
 import sentinel_server.auth
 import sentinel_server.globals as globals
-import sentinel_server.ui
+from sentinel_server.ui import SharedPageLayout
 from sentinel_server.ui.utils import ConfirmationDialog
 
 logger = logging.getLogger(__name__)
@@ -278,13 +277,7 @@ class SystemSection:
 
 @router.page("/settings")
 async def settings():
-    sentinel_server.ui.add_global_style()
-    sentinel_server.ui.pages_shared()
-
-    with ui.element("div").classes("flex flex-col w-full gap-5"):
-        ui.label("Settings").classes(
-            "px-5 py-2 text-4xl font-bold text-[#4a4e69] border-b-2 border-gray-200"
-        )
+    with SharedPageLayout("Settings"):
         AuthenticationSection()
         plugins_section = PluginsSection()
         SystemSection()
