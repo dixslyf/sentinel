@@ -62,7 +62,7 @@ class ReactiveSubscriber(AsyncObserver[Alert]):
         await self._raw_sub.notify(alert)
 
     async def aclose(self):
-        pass
+        await self._raw_sub.clean_up()
 
     @property
     def raw_subscriber(self) -> AsyncSubscriber:
@@ -182,7 +182,7 @@ class SubscriptionRegistrar:
     async def remove_subscriber(
         self, raw_subscriber: AsyncSubscriber | SyncSubscriber
     ) -> bool:
-        subscriber = next(
+        subscriber: Optional[ReactiveSubscriber] = next(
             (
                 subscriber
                 for subscriber in self._subscribers
@@ -207,6 +207,9 @@ class SubscriptionRegistrar:
 
         for key in keys_to_remove:
             del self._subscriptions[key]
+
+        # Close.
+        await subscriber.aclose()
 
         self._subscribers.remove(subscriber)
         logger.info(f"Removed subscriber from alert manager: {raw_subscriber}")
