@@ -74,7 +74,10 @@ class AlertTable(AsyncObserver[ManagedAlert]):
                 row_key="id",
                 pagination={
                     "rowsPerPage": 5 if condensed else 10,
-                    "sortBy": "id",
+                    # In condensed form, there is no id column to sort by,
+                    # so we sort by timestamp, which should give the same results
+                    # since the timestamp format we use sorts correctly.
+                    "sortBy": "timestamp" if condensed else "id",
                     "descending": True,
                 },
             )
