@@ -86,6 +86,13 @@ class CameraDashboardTable:
 class DeviceDashboardTable:
     columns: list[dict[str, Any]] = [
         {
+            "name": "id",
+            "label": "ID",
+            "field": "id",
+            "required": "True",
+            "align": "left",
+        },
+        {
             "name": "name",
             "label": "Name",
             "field": "name",
@@ -150,6 +157,7 @@ class DeviceDashboardTable:
         for _, sub in managed_subscribers.items():
             self.table.add_row(
                 {
+                    "id": sub.id,
                     "name": sub.name,
                     "type": sub.component_name,
                     "status": "OK" if sub.status == SubscriberStatus.Ok else "Error",
