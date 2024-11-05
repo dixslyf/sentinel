@@ -30,7 +30,7 @@ class StatisticsDashboardChart:
             for detection in detections:
                 detection_counts[detection] = detection_counts.get(detection, 0) + 1
 
-        labels = list(detection_counts.keys())
+        labels = [label.capitalize() for label in detection_counts.keys()]
         values = list(detection_counts.values())
 
         ax = self.plot.figure.gca()
