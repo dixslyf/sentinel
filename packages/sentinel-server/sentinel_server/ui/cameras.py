@@ -111,7 +111,8 @@ class CameraTable:
             "body-cell-status",
             '<q-td :props="props">'
             + '<q-icon :name=\'props.row.enabled ? (props.row.status === "OK" ? "check_circle" : "error") : "videocam_off"\' '
-            + ':color=\'props.row.enabled ? (props.row.status === "OK" ? "green" : "red") : "gray"\' />'
+            + ':color=\'props.row.enabled ? (props.row.status === "OK" ? "green" : "red") : "gray"\' '
+            + "size='1.3rem' />"
             + "</q-td>",
         )
 
