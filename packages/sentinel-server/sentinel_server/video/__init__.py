@@ -20,7 +20,7 @@ from sentinel_core.video import (
 from sentinel_core.video.detect import DetectionResult
 
 import sentinel_server.tasks
-from sentinel_server.alert import SubscriptionRegistrar, AlertManager
+from sentinel_server.alert import AlertManager, SubscriptionRegistrar
 from sentinel_server.models import VideoSource as DbVideoSource
 from sentinel_server.plugins import PluginDescriptor, PluginManager
 from sentinel_server.video.detect import ReactiveDetector
@@ -190,7 +190,14 @@ class VideoSourceAlertEmitter(Emitter, AsyncObserver[DetectionResult]):
             objects.append(object_cat.name)
 
         desc: str = f"Detected: {", ".join(objects)}"
-        alert = Alert("Camera Alert", desc, self._vid_src.name, datetime.now())
+        alert = Alert(
+            header="Camera Alert",
+            description=desc,
+            source=self._vid_src.name,
+            source_type="Video Source",
+            timestamp=datetime.now(),
+            data={"detections": objects},
+        )
         await self._queue.put(alert)
 
     async def athrow(self, error: Exception):

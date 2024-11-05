@@ -55,5 +55,7 @@ class Alert(Model):
     header = fields.CharField(max_length=256)
     description = fields.CharField(max_length=2048)
     source = fields.CharField(max_length=255)
+    source_type = fields.CharField(max_length=255)
     source_deleted = fields.BooleanField(default=False)
     timestamp = fields.DatetimeField(auto_now=True)
+    data = fields.JSONField()

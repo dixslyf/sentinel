@@ -1,6 +1,6 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Protocol
+from typing import Any, Protocol
 
 from dataclasses_json import dataclass_json
 
@@ -11,7 +11,9 @@ class Alert:
     header: str
     description: str
     source: str
+    source_type: str
     timestamp: datetime
+    data: dict[str, Any] = field(default_factory=dict)
 
 
 class AsyncSubscriber(Protocol):

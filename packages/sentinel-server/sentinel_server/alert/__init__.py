@@ -60,7 +60,12 @@ class ReactiveSubscriber(AsyncObserver[Alert]):
 
     async def athrow(self, ex: Exception):
         alert = Alert(
-            "Sentinel Error", f"An error occurred: {str(ex)}", "Unknown", datetime.now()
+            header="Sentinel Error",
+            description=f"An error occurred: {str(ex)}",
+            source="Unknown",
+            source_type="Unknown",
+            timestamp=datetime.now(),
+            data={"exception": ex},
         )
         await self._raw_sub.notify(alert)
 
@@ -284,12 +289,22 @@ class ManagedAlert:
         return self._db_info.source
 
     @property
-    def source_deleted(self) -> str:
+    def source_type(self) -> str:
+        return self._db_info.source_type
+
+    @property
+    def source_deleted(self) -> bool:
         return self._db_info.source_deleted
 
     @property
     def timestamp(self) -> datetime:
         return self._db_info.timestamp
+
+    @property
+    def data(self) -> dict[str, Any]:
+        # Should always be a dict.
+        data = typing.cast(dict[str, Any], self._db_info.data)
+        return data
 
 
 class AlertManager:
@@ -337,7 +352,9 @@ class AlertManager:
             header=alert.header,
             description=alert.description,
             source=alert.source,
+            source_type=alert.source_type,
             timestamp=alert.timestamp,
+            data=alert.data,
         )
 
         await db_alert.save()
