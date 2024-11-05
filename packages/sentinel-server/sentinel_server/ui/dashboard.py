@@ -16,6 +16,13 @@ router = APIRouter()
 class CameraDashboardTable: 
     columns: list[dict[str, Any]] = [
         {
+            "name": "id",
+            "label": "ID",
+            "field": "id",
+            "align": "left",
+            "required": True,
+        },
+        {
             "name": "name",
             "label": "Name",
             "field": "name",
