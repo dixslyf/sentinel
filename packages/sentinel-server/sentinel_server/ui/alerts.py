@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from typing import Any, Optional
 
 from aioreactive import AsyncDisposable, AsyncObserver
@@ -131,9 +132,7 @@ class AlertTable(AsyncObserver[ManagedAlert]):
                     ),
                     # .astimezone() converts from UTC to the local time zone.
                     # .strftime() for formatting.
-                    "timestamp": alert.timestamp.astimezone().strftime(
-                        "%Y-%m-%d %H:%M:%S"
-                    ),
+                    "timestamp": AlertTable._format_timestamp(alert.timestamp),
                 }
             )
 
@@ -158,9 +157,13 @@ class AlertTable(AsyncObserver[ManagedAlert]):
                 "header": alert.header,
                 "description": alert.description,
                 "source": alert.source,
-                "timestamp": alert.timestamp,
+                "timestamp": AlertTable._format_timestamp(alert.timestamp),
             }
         )
+
+    @staticmethod
+    def _format_timestamp(timestamp: datetime) -> str:
+        return timestamp.astimezone().strftime("%Y-%m-%d %H:%M:%S")
 
 
 @router.page("/alerts")
