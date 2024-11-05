@@ -70,19 +70,16 @@ class PluginTable:
         """
         Handler for when the enabled checkbox for a plugin is toggled.
         """
-        # Note: The row index is guaranteed to be the same as the index
-        # to the plugin manager's list of plugin descriptors. So, it is
-        # safe to pass this index to `add_to_whitelist` and `remove_from_whitelist`.
-        row_idx = msg.args["rowIndex"]
+        name = msg.args["row"]["name"]
         enabled = msg.args["row"]["enabled"]
 
         await globals.plugin_manager_loaded.wait()
         await globals.plugins_loaded.wait()
         plugin_manager = globals.plugin_manager
         if enabled:
-            await run.io_bound(plugin_manager.add_to_whitelist, row_idx)
+            await run.io_bound(plugin_manager.add_to_whitelist, name)
         else:
-            await run.io_bound(plugin_manager.remove_from_whitelist, row_idx)
+            await run.io_bound(plugin_manager.remove_from_whitelist, name)
 
         await self.refresh_dirty_message()
 
