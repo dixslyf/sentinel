@@ -126,7 +126,11 @@ class AlertTable(AsyncObserver[ManagedAlert]):
                         if not alert.source_deleted
                         else f"{alert.source} (deleted)"
                     ),
-                    "timestamp": alert.timestamp,
+                    # .astimezone() converts from UTC to the local time zone.
+                    # .strftime() for formatting.
+                    "timestamp": alert.timestamp.astimezone().strftime(
+                        "%Y-%m-%d %H:%M:%S"
+                    ),
                 }
             )
 
