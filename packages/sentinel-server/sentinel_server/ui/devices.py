@@ -264,11 +264,10 @@ async def devices_page() -> None:
     sentinel_server.ui.add_global_style()
     sentinel_server.ui.pages_shared()
 
-
-    with ui.element("div").classes(
-        "w-full flex flex-col gap-5"
-    ):
-        ui.label("Devices").classes("px-5 py-2 text-4xl font-bold text-[#4a4e69] border-b-2 border-gray-200")
+    with ui.element("div").classes("w-full flex flex-col gap-5"):
+        ui.label("Devices").classes(
+            "px-5 py-2 text-4xl font-bold text-[#4a4e69] border-b-2 border-gray-200"
+        )
         with ui.element("div").classes("flex justify-center text-center"):
             table = DeviceTable()
             dialog = AddDeviceDialog(table)
@@ -373,7 +372,11 @@ class DeviceDeleteButton:
         self.confirm_dialog = ConfirmationDialog(
             f"Delete device with ID {vidsrc_id}?", on_yes=self._delete_device
         )
-        self.button = ui.button("Delete", on_click=self._on_click).classes("bg-black rounded-xl py-1 px-3 text-[#cad3f5]").props("no-caps")
+        self.button = (
+            ui.button("Delete", on_click=self._on_click)
+            .classes("bg-black rounded-xl py-1 px-3 text-[#cad3f5]")
+            .props("no-caps")
+        )
 
     def _on_click(self, args: ClickEventArguments) -> None:
         self.confirm_dialog.open()
@@ -392,9 +395,13 @@ async def device_view_page(id: int) -> None:
     sentinel_server.ui.pages_shared()
 
     with ui.element("div").classes("w-full flex flex-col"):
-        ui.label("Device Details").classes("px-5 py-2 text-4xl font-bold text-[#4a4e69] border-b-2 border-gray-200")
+        ui.label("Device Details").classes(
+            "px-5 py-2 text-4xl font-bold text-[#4a4e69] border-b-2 border-gray-200"
+        )
 
-        with ui.element("div").classes("flex justify-center mt-5 border-b-2 border-gray-200 w-full"):
+        with ui.element("div").classes(
+            "flex justify-center mt-5 border-b-2 border-gray-200 w-full"
+        ):
             with ui.element("div").classes("flex flex-col"):
                 device_details = DeviceDetails(id)
         with ui.element("div").classes("flex justify-end mr-5 mt-5"):
