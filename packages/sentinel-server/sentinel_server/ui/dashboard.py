@@ -22,17 +22,14 @@ class StatisticsDashboardChart:
     async def refresh(self) -> None:
         self.plot.clear()
 
-        detection_counts = {}
+        detection_counts: dict[str, int] = {}
         await globals.alert_manager_loaded.wait()
 
         async for alert in globals.alert_manager.get_alerts():
-            # logger.info(f"Detections: {alert.data["detections"]}")
-            # print(f"detection: {alert.data["detections"]}")
             detections = alert.data["detections"]
             for detection in detections:
                 detection_counts[detection] = detection_counts.get(detection, 0) + 1
 
-        # logger.info(f"Detection Counts: {detection_counts}")
         labels = list(detection_counts.keys())
         values = list(detection_counts.values())
 
