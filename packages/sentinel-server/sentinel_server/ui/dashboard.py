@@ -39,6 +39,9 @@ class CameraDashboardTable:
         self.table = (
             ui.table(columns=CameraDashboardTable.columns, rows=[], row_key="name")
             .props("loading")
+            .classes("w-10/12 border-2 border-gray-100")
+            .props("table-header-style='background-color: #f0f0f0'")
+            .props("flat")
         )
 
         # status indicator slot
@@ -111,6 +114,10 @@ class DeviceDashboardTable:
     def __init__(self) -> None:
         self.table = (
             ui.table(columns=DeviceDashboardTable.columns, rows=[], row_key="name")
+            .props("loading")
+            .classes("w-10/12 border-2 border-gray-100")
+            .props("table-header-style='background-color: #f0f0f0'")
+            .props("flat")
         )
 
         # status indicator slot 
@@ -191,6 +198,10 @@ class AlertDashboardTable:
                     row_key="id",
                     pagination={"rowsPerPage": 3, "sortBy": "id", "descending": True},
                 )
+                .props("loading")
+                .classes("w-11/12 border-2 border-gray-100")
+                .props("table-header-style='background-color: #f0f0f0'")
+                .props("flat")
         )
     
     async def refresh(self) -> None:
@@ -249,31 +260,34 @@ class StatisticsDashboardChart:
 
         self.plot.update()
 
-@router.page("/dashboard")
+@router.page("/dashboard")  
 async def dashboard_page() -> None:
     sentinel_server.ui.add_global_style()
     sentinel_server.ui.pages_shared()
     ui.label("Dashboard").classes("px-5 py-2 text-4xl font-bold text-[#4a4e69] border-b-2 border-gray-200 w-full")
 
     with ui.element("div").classes("w-full flex flex-col items-center"):
-        with ui.element("div").classes("flex w-full gap-5 justify-center"):
-            with ui.card().classes("w-2/5"):
+        with ui.element("div").classes("flex w-full gap-10 justify-center mt-5"):
+            with ui.card().classes("w-2/5 border-2 border-gray-100 rounded-lg shadow-md p-6 hover:shadow-lg hover:scale-105 transform transition dutraion-300"):
                 ui.label("Cameras").classes("text-xl font-bold text-[#4a4e69]")
                 with ui.element("div").classes("w-full flex justify-center"):
                     camera_table = CameraDashboardTable() 
             
-            with ui.card().classes("w-2/5"):
-                ui.label("Devices")
-                device_table = DeviceDashboardTable()
+            with ui.card().classes("w-2/5 border-2 border-gray-100 rounded-lg shadow-md p-6 hover:shadow-lg hover:scale-105 transform transition dutraion-300"):
+                ui.label("Devices").classes("text-xl font-bold text-[#4a4e69]")
+                with ui.element("div").classes("w-full flex justify-center"):
+                    device_table = DeviceDashboardTable()
 
-        with ui.element("div").classes("flex w-full gap-5 justify-center"):
-            with ui.card().classes("w-2/5"):
-                ui.label("Alerts")
-                alert_table = AlertDashboardTable()
+        with ui.element("div").classes("flex w-full gap-10 justify-center mt-5"):
+            with ui.card().classes("w-2/5 border-2 border-gray-100 rounded-lg shadow-md p-6 hover:shadow-lg hover:scale-105 transform transition dutraion-300"):
+                ui.label("Alerts").classes("text-xl font-bold text-[#4a4e69]")
+                with ui.element("div").classes("w-full flex justify-center"):
+                    alert_table = AlertDashboardTable()
 
-            with ui.card().classes("w-2/5"):
-                ui.label("Statistics")
-                statistic_chart = StatisticsDashboardChart()
+            with ui.card().classes("w-2/5 border-2 border-gray-100 rounded-lg shadow-md p-6 hover:shadow-lg hover:scale-105 transform transition dutraion-300"):
+                ui.label("Statistics").classes("text-xl font-bold text-[#4a4e69]")
+                with ui.element("div").classes("w-full flex justify-center"):
+                    statistic_chart = StatisticsDashboardChart()
     
 
     await ui.context.client.connected()
