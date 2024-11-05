@@ -54,13 +54,29 @@ class AlertTable(AsyncObserver[ManagedAlert]):
         },
     ]
 
-    def __init__(self, source_id: Optional[int] = None) -> None:
+    def __init__(
+        self, source_id: Optional[int] = None, condensed: bool = False
+    ) -> None:
+        columns: list[dict[str, Any]] = (
+            AlertTable.columns
+            if not condensed
+            else [
+                column
+                for column in AlertTable.columns
+                if column["name"] in {"description", "source", "timestamp"}
+            ]
+        )
+
         self.table = (
             ui.table(
-                columns=AlertTable.columns,
+                columns=columns,
                 rows=[],
                 row_key="id",
-                pagination={"rowsPerPage": 10, "sortBy": "id", "descending": True},
+                pagination={
+                    "rowsPerPage": 5 if condensed else 10,
+                    "sortBy": "id",
+                    "descending": True,
+                },
             )
             .props("loading")
             .classes("w-11/12 border-2 border-gray-100")

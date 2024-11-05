@@ -36,7 +36,7 @@ class DeviceTable:
             "required": True,
             "align": "left",
         },
-        {"name": "name", "label": "Name", "field": "name"},
+        {"name": "name", "label": "Name", "field": "name", "align": "left"},
         {
             "name": "plugin_component",
             "label": "Plugin / Component",
@@ -47,13 +47,41 @@ class DeviceTable:
         {"name": "view", "label": "", "field": "view"},
     ]
 
-    def __init__(self) -> None:
+    def __init__(self, condensed: bool = False) -> None:
+        columns: list[dict[str, Any]] = (
+            DeviceTable.columns
+            if not condensed
+            else [
+                column
+                for column in DeviceTable.columns
+                if column["name"] in {"name", "status", "view"}
+            ]
+        )
+
         self.table = (
-            ui.table(columns=DeviceTable.columns, rows=[], row_key="id")
+            ui.table(
+                columns=columns,
+                rows=[],
+                row_key="id",
+                pagination={
+                    "rowsPerPage": 5 if condensed else 10,
+                    "sortBy": "id",
+                    "descending": False,
+                },
+            )
             .props("loading")
             .classes("w-11/12 border-2 border-gray-100")
             .props("table-header-style='background-color: #f0f0f0'")
             .props("flat")
+        )
+
+        # Status indicator icon.
+        self.table.add_slot(
+            "body-cell-status",
+            '<q-td :props="props">'
+            + '<q-icon :name=\'props.row.status === "OK" ? "check_circle" : "error"\' '
+            + ':color=\'props.row.status === "OK" ? "green" : "red"\' />'
+            + "</q-td>",
         )
 
         # Enabled checkbox.
