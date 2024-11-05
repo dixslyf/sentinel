@@ -1,3 +1,4 @@
+import copy
 import logging
 from typing import Any, Optional
 
@@ -66,7 +67,7 @@ class CameraTable:
             "name": "status",
             "label": "Status",
             "field": "status",
-            "align": "left",
+            "align": "center",
         },
         {
             "name": "enabled",
@@ -77,13 +78,41 @@ class CameraTable:
         {"name": "view", "label": "", "field": "view"},
     ]
 
-    def __init__(self) -> None:
+    def __init__(self, condensed: bool = False) -> None:
+        columns: list[dict[str, Any]] = (
+            CameraTable.columns
+            if not condensed
+            else [
+                column
+                for column in CameraTable.columns
+                if column["name"] in {"name", "status", "view"}
+            ]
+        )
+
         self.table = (
-            ui.table(columns=CameraTable.columns, rows=[], row_key="id")
+            ui.table(
+                columns=columns,
+                rows=[],
+                row_key="id",
+                pagination={
+                    "rowsPerPage": 5 if condensed else 10,
+                    "sortBy": "id",
+                    "descending": False,
+                },
+            )
             .props("loading")
             .classes("camera_table w-11/12 border-2 border-gray-100")
             .props("table-header-style='background-color: #f0f0f0'")
             .props("flat")
+        )
+
+        # Status indicator icon.
+        self.table.add_slot(
+            "body-cell-status",
+            '<q-td :props="props">'
+            + '<q-icon :name=\'props.row.status === "OK" ? "check_circle" : "error"\' '
+            + ':color=\'props.row.status === "OK" ? "green" : "red"\' />'
+            + "</q-td>",
         )
 
         # Enabled checkbox.
@@ -402,10 +431,10 @@ async def cameras_page() -> None:
     sentinel_server.ui.pages_shared()
 
     # ui design for cameras page
-    with ui.element("div").classes(
-        "camera_wrapper w-full flex flex-col gap-5 justify-center text-center mt-10"
-    ):
-
+    with ui.element("div").classes("camera_wrapper w-full flex flex-col gap-5"):
+        ui.label("Cameras").classes(
+            "px-5 py-2 text-4xl font-bold text-[#4a4e69] border-b-2 border-gray-200"
+        )
         with ui.element("div").classes("flex justify-center text-center"):
             table = CameraTable()
             dialog = AddCameraDialog(table)
@@ -428,7 +457,7 @@ async def cameras_page() -> None:
 class CameraView(AsyncObserver[Frame]):
     def __init__(self, id: int):
         self.id = id
-        self.image = ui.interactive_image()
+        self.image = ui.interactive_image().classes("px-5")
 
         self.visualiser = ReactiveDetectionVisualiser()
         self.sub: Optional[AsyncDisposable] = None
@@ -577,7 +606,9 @@ class CameraDeleteButton:
         self.confirm_dialog = ConfirmationDialog(
             f"Delete video source with ID {vidsrc_id}?", on_yes=self._delete_camera
         )
-        self.button = ui.button("Delete", on_click=self._on_click)
+        self.button = ui.button("Delete", on_click=self._on_click).classes(
+            "text-md text-[#cad3f5] bg-black rounded-xl"
+        )
 
     def _on_click(self, args: ClickEventArguments) -> None:
         self.confirm_dialog.open()
@@ -595,19 +626,24 @@ async def camera_view_page(id: int) -> None:
     sentinel_server.ui.add_global_style()
     sentinel_server.ui.pages_shared()
 
-    with ui.element("div").classes("w-full flex h-3/5"):
-        with ui.element("div").classes("w-3/5 border-2 border-red-400"):
-            ui.label("Live Feed")
+    with ui.element("div").classes("w-full flex h-2/5"):
+        with ui.element("div").classes("w-3/5 border-r-2 border-gray-200"):
+            ui.label("Live Feed").classes("text-2xl font-bold text-[#4a4e69] pl-5")
             camera_view = CameraView(id)
 
-        with ui.element("div").classes("w-2/5 border-2 border-blue-400"):
-            ui.label("Camera details")
+        with ui.element("div").classes("w-2/5 pl-5"):
+            ui.label("Camera details").classes("text-2xl font-bold text-[#4a4e69]")
             camera_details = CameraDetails(id)
 
-    with ui.element("div").classes("w-full border-2 border-purple-400"):
-        alert_table = AlertTable(source_id=id)
+    with ui.element("div").classes(
+        "w-full flex flex-col border-t-2 border-gray-200 pt-5"
+    ):
+        ui.label("Logs").classes("text-2xl font-bold text-[#4a4e69] pl-5 pb-3")
+        with ui.element("div").classes("flex justify-center w-full"):
+            alert_table = AlertTable(source_id=id)
 
-    delete_button = CameraDeleteButton(id)
+    with ui.element("div").classes("w-full flex justify-end px-5 pb-5"):
+        delete_button = CameraDeleteButton(id)
 
     await ui.context.client.connected()
     await camera_view.start_capture()

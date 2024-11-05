@@ -36,7 +36,7 @@ class DeviceTable:
             "required": True,
             "align": "left",
         },
-        {"name": "name", "label": "Name", "field": "name"},
+        {"name": "name", "label": "Name", "field": "name", "align": "left"},
         {
             "name": "plugin_component",
             "label": "Plugin / Component",
@@ -47,13 +47,41 @@ class DeviceTable:
         {"name": "view", "label": "", "field": "view"},
     ]
 
-    def __init__(self) -> None:
+    def __init__(self, condensed: bool = False) -> None:
+        columns: list[dict[str, Any]] = (
+            DeviceTable.columns
+            if not condensed
+            else [
+                column
+                for column in DeviceTable.columns
+                if column["name"] in {"name", "status", "view"}
+            ]
+        )
+
         self.table = (
-            ui.table(columns=DeviceTable.columns, rows=[], row_key="id")
+            ui.table(
+                columns=columns,
+                rows=[],
+                row_key="id",
+                pagination={
+                    "rowsPerPage": 5 if condensed else 10,
+                    "sortBy": "id",
+                    "descending": False,
+                },
+            )
             .props("loading")
             .classes("w-11/12 border-2 border-gray-100")
             .props("table-header-style='background-color: #f0f0f0'")
             .props("flat")
+        )
+
+        # Status indicator icon.
+        self.table.add_slot(
+            "body-cell-status",
+            '<q-td :props="props">'
+            + '<q-icon :name=\'props.row.status === "OK" ? "check_circle" : "error"\' '
+            + ':color=\'props.row.status === "OK" ? "green" : "red"\' />'
+            + "</q-td>",
         )
 
         # Enabled checkbox.
@@ -264,11 +292,10 @@ async def devices_page() -> None:
     sentinel_server.ui.add_global_style()
     sentinel_server.ui.pages_shared()
 
-    # ui.label("Devices")
-    with ui.element("div").classes(
-        "w-full flex flex-col gap-5 justify-center text-center mt-10"
-    ):
-
+    with ui.element("div").classes("w-full flex flex-col gap-5"):
+        ui.label("Devices").classes(
+            "px-5 py-2 text-4xl font-bold text-[#4a4e69] border-b-2 border-gray-200"
+        )
         with ui.element("div").classes("flex justify-center text-center"):
             table = DeviceTable()
             dialog = AddDeviceDialog(table)
@@ -292,14 +319,14 @@ class DeviceDetails:
         # TODO: make this skeleton element larger
         self.skeleton = ui.skeleton()
 
-        self.id_markdown = ui.markdown()
-        self.name_markdown = ui.markdown()
-        self.enabled_markdown = ui.markdown()
-        self.status_markdown = ui.markdown()
+        self.id_markdown = ui.markdown().classes("text-xl")
+        self.name_markdown = ui.markdown().classes("text-xl")
+        self.enabled_markdown = ui.markdown().classes("text-xl")
+        self.status_markdown = ui.markdown().classes("text-xl")
 
-        self.plugin_comp_markdown = ui.markdown()
+        self.plugin_comp_markdown = ui.markdown().classes("text-xl")
         # TODO: use separate markdowns for individual configuration parameters
-        self.config_markdown = ui.markdown()
+        self.config_markdown = ui.markdown().classes("text-xl")
 
         # List of all the markdown elements above so that we can iterate over them easily.
         self._markdown_elements = [
@@ -373,7 +400,11 @@ class DeviceDeleteButton:
         self.confirm_dialog = ConfirmationDialog(
             f"Delete device with ID {vidsrc_id}?", on_yes=self._delete_device
         )
-        self.button = ui.button("Delete", on_click=self._on_click)
+        self.button = (
+            ui.button("Delete", on_click=self._on_click)
+            .classes("bg-black rounded-xl py-1 px-3 text-[#cad3f5]")
+            .props("no-caps")
+        )
 
     def _on_click(self, args: ClickEventArguments) -> None:
         self.confirm_dialog.open()
@@ -391,13 +422,18 @@ async def device_view_page(id: int) -> None:
     sentinel_server.ui.add_global_style()
     sentinel_server.ui.pages_shared()
 
-    # TODO: redo UI
-    with ui.element("div").classes("w-full flex h-3/5"):
-        with ui.element("div").classes("border-2 border-blue-400"):
-            ui.label("Device details")
-            device_details = DeviceDetails(id)
+    with ui.element("div").classes("w-full flex flex-col"):
+        ui.label("Device Details").classes(
+            "px-5 py-2 text-4xl font-bold text-[#4a4e69] border-b-2 border-gray-200"
+        )
 
-    DeviceDeleteButton(id)
+        with ui.element("div").classes(
+            "flex justify-center mt-5 border-b-2 border-gray-200 w-full"
+        ):
+            with ui.element("div").classes("flex flex-col"):
+                device_details = DeviceDetails(id)
+        with ui.element("div").classes("flex justify-end mr-5 mt-5"):
+            DeviceDeleteButton(id)
 
     await ui.context.client.connected()
     await device_details.fill_info()

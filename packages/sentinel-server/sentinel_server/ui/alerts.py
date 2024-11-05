@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from typing import Any, Optional
 
 from aioreactive import AsyncDisposable, AsyncObserver
@@ -54,13 +55,32 @@ class AlertTable(AsyncObserver[ManagedAlert]):
         },
     ]
 
-    def __init__(self, source_id: Optional[int] = None) -> None:
+    def __init__(
+        self, source_id: Optional[int] = None, condensed: bool = False
+    ) -> None:
+        columns: list[dict[str, Any]] = (
+            AlertTable.columns
+            if not condensed
+            else [
+                column
+                for column in AlertTable.columns
+                if column["name"] in {"description", "source", "timestamp"}
+            ]
+        )
+
         self.table = (
             ui.table(
-                columns=AlertTable.columns,
+                columns=columns,
                 rows=[],
                 row_key="id",
-                pagination={"rowsPerPage": 10, "sortBy": "id", "descending": True},
+                pagination={
+                    "rowsPerPage": 5 if condensed else 10,
+                    # In condensed form, there is no id column to sort by,
+                    # so we sort by timestamp, which should give the same results
+                    # since the timestamp format we use sorts correctly.
+                    "sortBy": "timestamp" if condensed else "id",
+                    "descending": True,
+                },
             )
             .props("loading")
             .classes("w-11/12 border-2 border-gray-100")
@@ -110,7 +130,9 @@ class AlertTable(AsyncObserver[ManagedAlert]):
                         if not alert.source_deleted
                         else f"{alert.source} (deleted)"
                     ),
-                    "timestamp": alert.timestamp,
+                    # .astimezone() converts from UTC to the local time zone.
+                    # .strftime() for formatting.
+                    "timestamp": AlertTable._format_timestamp(alert.timestamp),
                 }
             )
 
@@ -135,9 +157,13 @@ class AlertTable(AsyncObserver[ManagedAlert]):
                 "header": alert.header,
                 "description": alert.description,
                 "source": alert.source,
-                "timestamp": alert.timestamp,
+                "timestamp": AlertTable._format_timestamp(alert.timestamp),
             }
         )
+
+    @staticmethod
+    def _format_timestamp(timestamp: datetime) -> str:
+        return timestamp.astimezone().strftime("%Y-%m-%d %H:%M:%S")
 
 
 @router.page("/alerts")
@@ -145,9 +171,13 @@ async def alerts_page():
     sentinel_server.ui.add_global_style()
     sentinel_server.ui.pages_shared()
 
-    with ui.element("div").classes("flex justify-center text-center w-full mt-10"):
+    ui.label("Alerts").classes(
+        "px-5 py-2 text-4xl font-bold text-[#4a4e69] border-b-2 border-gray-200 w-full"
+    )
+    with ui.element("div").classes("flex justify-center text-center w-full mt-5"):
         alert_table = AlertTable()
 
+    await ui.context.client.connected()
     await alert_table.refresh()
     await alert_table.register()
 
