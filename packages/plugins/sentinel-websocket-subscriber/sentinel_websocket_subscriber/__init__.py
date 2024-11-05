@@ -21,15 +21,13 @@ class WebSocketSubscriber(AsyncSubscriber):
         self.session: aiohttp.ClientSession = aiohttp.ClientSession()
         self.websocket: Optional[aiohttp.ClientWebSocketResponse] = None
 
-    async def connect(self) -> None:
-        """Establishes a WebSocket connection."""
-        if self.websocket is None or self.websocket.closed:
-            self.websocket = await self.session.ws_connect(self.websocket_url)
-
     async def notify(self, alert: Alert) -> None:
         """Sends alert data over the WebSocket."""
-        if self.websocket is None or self.websocket.closed:
-            await self.connect()
+        if self.websocket is None:
+            self.websocket = await self.session.ws_connect(self.websocket_url)
+
+        if self.websocket.closed:
+            raise RuntimeError("WebSocket closed")
 
         # `self.connect() ensures that `self.websocket` is not `None`.
         self.websocket = typing.cast(aiohttp.ClientWebSocketResponse, self.websocket)

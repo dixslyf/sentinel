@@ -53,7 +53,10 @@ class ReactiveSubscriber(AsyncObserver[Alert]):
         return cls(raw_async_sub)
 
     async def asend(self, alert: Alert):
-        await self._raw_sub.notify(alert)
+        try:
+            await self._raw_sub.notify(alert)
+        except Exception as ex:
+            logger.error(f"An error occurred when sending an alert: {str(ex)}")
 
     async def athrow(self, ex: Exception):
         alert = Alert(
