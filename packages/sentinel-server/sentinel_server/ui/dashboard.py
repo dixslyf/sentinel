@@ -1,11 +1,11 @@
 import logging
-from typing import Any
 
+from aioreactive import AsyncObserver
 from nicegui import APIRouter, ui
 
 import sentinel_server.globals as globals
 import sentinel_server.ui
-from sentinel_server.alert import ManagedSubscriber
+from sentinel_server.alert import ManagedAlert
 from sentinel_server.ui.alerts import AlertTable
 from sentinel_server.ui.cameras import CameraTable
 from sentinel_server.ui.devices import DeviceTable
@@ -15,9 +15,17 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-class StatisticsDashboardChart:
+class StatisticsDashboardChart(AsyncObserver[ManagedAlert]):
     def __init__(self) -> None:
         self.plot = ui.matplotlib(figsize=(4, 3))
+
+    async def register(self) -> None:
+        await globals.alert_manager_loaded.wait()
+        self._subscription = await globals.alert_manager.subscribe(self)
+
+    async def deregister(self) -> None:
+        if self._subscription is not None:
+            await self._subscription.dispose_async()
 
     async def refresh(self) -> None:
         self.plot.clear()
@@ -54,6 +62,15 @@ class StatisticsDashboardChart:
         ax.set_title("Detected Types in Alerts")
 
         self.plot.update()
+
+    async def asend(self, alert: ManagedAlert) -> None:
+        await self.refresh()
+
+    async def athrow(self, error: Exception) -> None:
+        raise NotImplementedError
+
+    async def aclose(self) -> None:
+        raise NotImplementedError
 
 
 @router.page("/dashboard")
@@ -103,7 +120,9 @@ async def dashboard_page() -> None:
     await alert_table.register()
     await alert_table.refresh()
 
+    await statistic_chart.register()
     await statistic_chart.refresh()
 
     await ui.context.client.disconnected()
     await alert_table.deregister()
+    await statistic_chart.deregister()
