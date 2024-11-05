@@ -3101,6 +3101,23 @@ type = "directory"
 url = "../plugins/sentinel-ultralytics"
 
 [[package]]
+name = "sentinel-websocket-subscriber"
+version = "0.1.0"
+description = "WebSocket subscriber plugin for Sentinel."
+optional = false
+python-versions = "^3.12"
+files = []
+develop = true
+
+[package.dependencies]
+aiohttp = "^3.10.10"
+sentinel-core = {path = "../../sentinel-core", develop = true}
+
+[package.source]
+type = "directory"
+url = "../plugins/sentinel-websocket-subscriber"
+
+[[package]]
 name = "setuptools"
 version = "75.1.0"
 description = "Easily download, build, install, upgrade, and uninstall Python packages"
@@ -3941,4 +3958,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "d06f7f76301bb3307a84f40afb8c43b69ecf8451a395f57fd96a347c8ed28116"
+content-hash = "a03e805dcaed4d89dadb2d88318a4b09d4f13f00d1c1e89974182c7126f4905f"
