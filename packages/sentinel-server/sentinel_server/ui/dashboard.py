@@ -96,9 +96,14 @@ async def dashboard_page() -> None:
                     statistic_chart = StatisticsDashboardChart()
 
     await ui.context.client.connected()
+
     await camera_table.refresh()
     await device_table.refresh()
+
+    await alert_table.register()
     await alert_table.refresh()
+
     await statistic_chart.refresh()
 
     await ui.context.client.disconnected()
+    await alert_table.deregister()

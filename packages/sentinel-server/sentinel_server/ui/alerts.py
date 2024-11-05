@@ -174,6 +174,7 @@ async def alerts_page():
     with ui.element("div").classes("flex justify-center text-center w-full mt-5"):
         alert_table = AlertTable()
 
+    await ui.context.client.connected()
     await alert_table.refresh()
     await alert_table.register()
 
