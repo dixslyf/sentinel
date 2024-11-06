@@ -170,9 +170,12 @@ async def dashboard_page() -> None:
             with _card_container("Alerts"):
                 alert_table = AlertTable(condensed=True)
             with _card_container("Statistics"):
-                with ui.element("div").classes("w-full flex gap-8"):
-                    system_usage = SystemUsageWidget()
-                statistic_chart = StatisticsDashboardChart()
+                with ui.element("div").classes("w-full flex flex-col items-center"):
+                    with ui.element("div").classes("w-full flex gap-8 justify-center"):
+                        system_usage = SystemUsageWidget()
+                    
+                    with ui.element("div").classes(""):
+                        statistic_chart = StatisticsDashboardChart()
 
     await ui.context.client.connected()
 
