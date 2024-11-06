@@ -30,6 +30,10 @@ class OpenCVVideoStream(SyncVideoStream):
 
         _, data = self._capture.retrieve()
 
+        # OpenCV uses BGR by default. However, most other libraries
+        # and applications expect RGB, so we convert to RGB.
+        data = cv2.cvtColor(data, cv2.COLOR_BGR2RGB)
+
         return Frame(data)
 
     def clean_up(self) -> None:
