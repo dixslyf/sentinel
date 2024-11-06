@@ -1,11 +1,16 @@
+import asyncio
 import logging
+from typing import Optional
 
+import psutil
 from aioreactive import AsyncObserver
 from nicegui import APIRouter, ui
 from nicegui.element import Element
 from nicegui.elements.card import Card
+from nicegui.elements.markdown import Markdown
 
 import sentinel_server.globals as globals
+import sentinel_server.tasks
 from sentinel_server.alert import ManagedAlert
 from sentinel_server.ui import SharedPageLayout
 from sentinel_server.ui.alerts import AlertTable
@@ -15,6 +20,53 @@ from sentinel_server.ui.devices import DeviceTable
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+class SystemUsageWidget:
+    def __init__(self) -> None:
+        with ui.element("div").classes("flex gap-2 items-center"):
+            self._cpu_usage_markdown: Markdown = ui.markdown("**CPU Usage:**")
+            self._cpu_spinner = ui.spinner("dots", color="black")
+
+        with ui.element("div").classes("flex gap-2 items-center"):
+            self._memory_usage_markdown: Markdown = ui.markdown("**Memory Usage:**")
+            self._memory_spinner = ui.spinner("dots", color="black")
+
+        self._task: Optional[asyncio.Task] = None
+        self._run: bool = False
+
+    async def refresh(self) -> None:
+        cpu_percent = await sentinel_server.tasks.run_in_thread(
+            psutil.cpu_percent, interval=1.0
+        )
+        self._cpu_spinner.set_visibility(False)
+        self._cpu_usage_markdown.set_content(f"**CPU Usage:** {cpu_percent:.1f}%")
+
+        memory_percent = (
+            await sentinel_server.tasks.run_in_thread(psutil.virtual_memory)
+        ).percent
+        self._memory_spinner.set_visibility(False)
+        self._memory_usage_markdown.set_content(
+            f"**Memory Usage:** {memory_percent:.1f}%"
+        )
+
+    def start(self) -> None:
+        self._run = True
+        self._task = asyncio.create_task(self._update_loop())
+
+        def done_callback(task: asyncio.Task):
+            self._task = None
+
+        self._task.add_done_callback(done_callback)
+
+    def stop(self) -> None:
+        self._run = False
+
+    async def _update_loop(self) -> None:
+        while self._run:
+            # Update every second.
+            await asyncio.sleep(1)
+            await self.refresh()
 
 
 class StatisticsDashboardChart(AsyncObserver[ManagedAlert]):
@@ -118,6 +170,8 @@ async def dashboard_page() -> None:
             with _card_container("Alerts"):
                 alert_table = AlertTable(condensed=True)
             with _card_container("Statistics"):
+                with ui.element("div").classes("w-full flex gap-8"):
+                    system_usage = SystemUsageWidget()
                 statistic_chart = StatisticsDashboardChart()
 
     await ui.context.client.connected()
@@ -128,9 +182,12 @@ async def dashboard_page() -> None:
     await alert_table.register()
     await alert_table.refresh()
 
+    system_usage.start()
+
     await statistic_chart.register()
     await statistic_chart.refresh()
 
     await ui.context.client.disconnected()
+    system_usage.stop()
     await alert_table.deregister()
     await statistic_chart.deregister()
