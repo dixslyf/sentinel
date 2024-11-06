@@ -80,7 +80,7 @@ class DeviceTable:
         self.table.add_slot(
             "body-cell-status",
             '<q-td :props="props">'
-            + '<q-icon :name=\'props.row.enabled ? (props.row.status === "OK" ? "check_circle" : "error") : "notifications_off"\' '
+            + '<q-icon :name=\'props.row.enabled ? (props.row.status === "OK" ? "notifications_active" : "error") : "notifications_off"\' '
             + ':color=\'props.row.enabled ? (props.row.status === "OK" ? "green" : "red") : "gray"\' '
             + "size='1.3rem' />"
             + "</q-td>",
