@@ -60,7 +60,7 @@ class SharedPageLayout:
             "background-color: #5b6078"
         ):
             self._buttons: dict[str, Button] = {
-                label: SharedPageLayout._make_navbar_button(label, icon)
+                label: SharedPageLayout._make_navbar_button(label, icon, self._page_header) # <-- add self._page_header
                 for label, icon in labels_icons.items()
             }
 
@@ -74,10 +74,14 @@ class SharedPageLayout:
         for label, button in self._buttons.items():
             button.on_click(SharedPageLayout._make_navigation_function(label))
 
+
     @staticmethod
-    def _make_navbar_button(label: str, icon: str) -> Button:
+    def _make_navbar_button(label: str, icon: str, page_header: str) -> Button: # <-- add page_header param
         button_classes: str = "flex items-start w-full"
         button_props: str = "flat no-caps"
+
+        if label.lower() == page_header.lower(): # <-- if statement to check page header
+            button_classes += " bg-[#727894]"
 
         button = ui.button().classes(button_classes).props(button_props)
 
