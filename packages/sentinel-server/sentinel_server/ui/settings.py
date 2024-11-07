@@ -146,7 +146,9 @@ class PluginsSection:
 
 
 class AuthenticationSection:
-    def __init__(self) -> None:
+    def __init__(self, shared_layout: SharedPageLayout) -> None:
+        self._shared_layout: SharedPageLayout = shared_layout
+
         auth_card = ui.card().classes("w-full border-b-2 border-gray-100").props("flat")
         with auth_card:
             ui.label("User Authentication").classes("text-3xl font-bold text-[#4a4e69]")
@@ -223,6 +225,8 @@ class AuthenticationSection:
         await sentinel_server.auth.update_username(user_id, self.username_input.value)
         app.storage.user["username"] = self.username_input.value
 
+        self._shared_layout.refresh()
+
         ui.notify("Updated username!")
 
     async def password_update_button_on_click(self, args: ClickEventArguments) -> None:
@@ -277,8 +281,8 @@ class SystemSection:
 
 @router.page("/settings")
 async def settings():
-    with SharedPageLayout("Settings"):
-        AuthenticationSection()
+    with SharedPageLayout("Settings") as shared_layout:
+        AuthenticationSection(shared_layout)
         plugins_section = PluginsSection()
         SystemSection()
 

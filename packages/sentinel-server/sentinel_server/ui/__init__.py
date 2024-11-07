@@ -1,4 +1,4 @@
-from typing import Any, Callable
+from typing import Any, Callable, Self
 
 from nicegui import app, ui
 from nicegui.elements.button import Button
@@ -20,6 +20,9 @@ class SharedPageLayout:
         self._page_header: str = page_header
         self._setup_view()
         self._setup_controls()
+
+    def refresh(self) -> None:
+        self._username_label.set_text(f"{app.storage.user['username']}")
 
     def _setup_view(self) -> None:
         add_global_style()
@@ -43,9 +46,9 @@ class SharedPageLayout:
 
             # Username and logout icon.
             with ui.element("div").classes("flex items-center gap-2"):
-                ui.label(f"{app.storage.user['username']}").classes(
-                    "flex items-center text-xl text-[#cad3f5]"
-                )
+                self._username_label = ui.label(
+                    f"{app.storage.user['username']}"
+                ).classes("flex items-center text-xl text-[#cad3f5]")
 
                 self._logout_button = ui.button().props("flat")
                 with self._logout_button:
@@ -103,8 +106,9 @@ class SharedPageLayout:
     def _make_navigation_function(label: str) -> Callable[[ClickEventArguments], Any]:
         return lambda args: ui.navigate.to(f"/{label.lower()}")
 
-    def __enter__(self):
+    def __enter__(self) -> Self:
         self._main_container.__enter__()
+        return self
 
     def __exit__(self, *args):
         self._main_container.__exit__(*args)
