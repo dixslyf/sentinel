@@ -12,7 +12,7 @@ from typing import Callable, Optional
 
 from sentinel_core.plugins import ComponentDescriptor, Plugin
 
-import sentinel_server.globals as globals
+from sentinel_server.config import Configuration
 
 logger = logging.getLogger(__name__)
 
@@ -26,8 +26,14 @@ class PluginDescriptor:
 
 
 class PluginManager:
-    def __init__(self, whitelist: Collection[str]):
+    def __init__(
+        self, whitelist: Collection[str], config: Configuration, config_path: str
+    ):
+        self.config: Configuration = config
+        self.config_path: str = config_path
+
         self._whitelist: set[str] = set(whitelist)
+
         self._plugin_descriptors: Optional[list[PluginDescriptor]] = None
         self._is_dirty: bool = False
 
@@ -55,35 +61,38 @@ class PluginManager:
             for entry_point in entry_points
         ]
 
-    def add_to_whitelist(self, idx: int) -> None:
-        if self._plugin_descriptors is None:
-            raise ValueError("Plugins have not been initialised.")
+    def add_to_whitelist(self, name: str) -> bool:
+        if name in self._whitelist:
+            return False
 
-        plugin_desc: PluginDescriptor = self.plugin_descriptors[idx]
-        self._whitelist.add(plugin_desc.name)
-        logger.info(f'Added plugin "{plugin_desc.name}" to whitelist')
+        self._whitelist.add(name)
+        logger.info(f'Added plugin "{name}" to whitelist')
 
         # Update and save the configuration.
-        # TODO: how to make this async?
-        globals.config.plugin_whitelist.add(plugin_desc.name)
-        globals.config.serialise(globals.config_path)
+        self.config.plugin_whitelist.add(name)
+        self.config.serialise(self.config_path)
+
+        self._is_dirty = True
+        return True
+
+    def remove_from_whitelist(self, name: str) -> bool:
+        if name not in self._whitelist:
+            return False
+
+        self._whitelist.remove(name)
+        logger.info(f'Removed plugin "{name}" from whitelist')
+
+        # Update and save the configuration.
+        self.config.plugin_whitelist.remove(name)
+
+        self.config.serialise(self.config_path)
 
         self._is_dirty = True
 
-    def remove_from_whitelist(self, idx: int) -> None:
-        if self._plugin_descriptors is None:
-            raise ValueError("Plugins have not been initialised.")
+        return True
 
-        plugin_desc: PluginDescriptor = self.plugin_descriptors[idx]
-        self._whitelist.remove(plugin_desc.name)
-        logger.info(f'Removed plugin "{plugin_desc.name}" from whitelist')
-
-        # Update and save the configuration.
-        # TODO: how to make this async?
-        globals.config.plugin_whitelist.remove(plugin_desc.name)
-        globals.config.serialise(globals.config_path)
-
-        self._is_dirty = True
+    def get_whitelist(self) -> Collection[str]:
+        return self._whitelist
 
     def find_plugin_desc(
         self, predicate: Callable[[PluginDescriptor], bool]

@@ -40,7 +40,7 @@ def init_plugin_manager() -> None:
     assert config_loaded.is_set()
 
     global plugin_manager
-    plugin_manager = PluginManager(config.plugin_whitelist)
+    plugin_manager = PluginManager(config.plugin_whitelist, config, config_path)
     plugin_manager_loaded.set()
 
 

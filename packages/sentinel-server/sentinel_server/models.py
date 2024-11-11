@@ -7,7 +7,7 @@ class User(Model):
     Represents a user with an ID, username and hashed password.
     """
 
-    id = fields.IntField(pk=True)
+    id = fields.IntField(primary_key=True)
     username = fields.CharField(max_length=255, unique=True)
     hashed_password = fields.CharField(max_length=255)
 
@@ -17,7 +17,7 @@ class VideoSource(Model):
     Represents a video source with an associated video stream and detector.
     """
 
-    id = fields.IntField(pk=True)
+    id = fields.IntField(primary_key=True)
     name = fields.CharField(max_length=255, unique=True)
     enabled = fields.BooleanField()
 
@@ -37,7 +37,7 @@ class Subscriber(Model):
     Represents a subscriber that subscribes to alerts.
     """
 
-    id = fields.IntField(pk=True)
+    id = fields.IntField(primary_key=True)
     name = fields.CharField(max_length=255, unique=True)
     enabled = fields.BooleanField()
 
@@ -51,7 +51,7 @@ class Alert(Model):
     Represents an alert.
     """
 
-    id = fields.IntField(pk=True)
+    id = fields.IntField(primary_key=True)
     header = fields.CharField(max_length=256)
     description = fields.CharField(max_length=2048)
     source = fields.CharField(max_length=255)
