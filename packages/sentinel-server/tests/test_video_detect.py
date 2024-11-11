@@ -1,14 +1,18 @@
+import asyncio
+
 import numpy as np
 import pytest
-from sentinel_core.video import Frame
+from sentinel_core.video import AsyncVideoStream, Frame, VideoStreamNoDataException
 from sentinel_core.video.detect import (
+    AsyncDetector,
     BoundingBox,
     Detection,
     DetectionResult,
     PredictedCategory,
 )
 
-from sentinel_server.video.detect import visualise_detections
+from sentinel_server.video import ReactiveVideoStream
+from sentinel_server.video.detect import ReactiveDetector, visualise_detections
 
 
 @pytest.fixture
@@ -77,3 +81,71 @@ def test_visualise_detections_no_score(sample_frame):
         text_position[0] - 5 : text_position[0] + 5,
     ]
     assert np.any(text_region[:, :, 0] == 255), "Text not drawn correctly"
+
+
+@pytest.mark.asyncio
+async def test_reactive_detector_asend(mocker, sample_detection_result):
+    async_detector_mock = mocker.AsyncMock(spec=AsyncDetector)
+    async_detector_mock.detect.return_value = sample_detection_result
+    reactive_detector = ReactiveDetector(async_detector_mock)
+
+    results = []
+
+    async def observer(result):
+        results.append(result)
+
+    await reactive_detector.subscribe_async(observer)
+    await reactive_detector.asend(sample_detection_result.frame)
+
+    assert len(results) == 1
+    assert results[0] == sample_detection_result
+
+
+@pytest.mark.asyncio
+async def test_reactive_detector_aclose(mocker):
+    async_detector_mock = mocker.AsyncMock(spec=AsyncDetector)
+    reactive_detector = ReactiveDetector(async_detector_mock)
+
+    await reactive_detector.aclose()
+    async_detector_mock.clean_up.assert_called_once()
+
+
+class MockVideoStream(AsyncVideoStream):
+    def __init__(self, frames):
+        self.frames = frames
+        self.index = 0
+
+    async def next_frame(self):
+        if self.index < len(self.frames):
+            frame = self.frames[self.index]
+            self.index += 1
+            return frame
+        else:
+            await asyncio.sleep(0.1)  # Simulate waiting for the next frame
+            return None
+
+    async def clean_up(self):
+        pass
+
+
+@pytest.mark.asyncio
+async def test_reactive_video_stream_start_stop(sample_frame):
+    mock_stream = MockVideoStream([sample_frame] * 5)
+    reactive_stream = ReactiveVideoStream(mock_stream)
+
+    frames = []
+
+    async def observer(frame):
+        frames.append(frame)
+
+    await reactive_stream.subscribe_async(observer)
+    task = asyncio.create_task(reactive_stream.start())
+    await asyncio.sleep(0.5)  # Let the stream run for a short time
+    await reactive_stream.stop()
+    task.cancel()
+    try:
+        await task
+    except asyncio.CancelledError:
+        pass
+
+    assert len(frames) == 5, "Expected 5 frames to be emitted"
