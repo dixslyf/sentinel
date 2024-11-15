@@ -20,7 +20,10 @@ import sentinel_server.ui.login
 import sentinel_server.ui.settings
 
 
-async def setup():
+def app_setup():
+    # Static files.
+    app.add_static_files("/static", "static")
+
     # Set up routers.
     app.include_router(sentinel_server.ui.login.router)
     app.include_router(sentinel_server.ui.alerts.router)
@@ -29,6 +32,8 @@ async def setup():
     app.include_router(sentinel_server.ui.devices.router)
     app.include_router(sentinel_server.ui.settings.router)
 
+
+async def sentinel_setup():
     # Configure logging.
     log_level = os.environ.get("SENTINEL_LOG_LEVEL", "INFO").upper()
     if log_level not in ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"):
@@ -81,6 +86,11 @@ async def setup():
     logging.info("Sentinel started")
 
 
+async def setup():
+    app_setup()
+    await sentinel_setup()
+
+
 async def shutdown():
     await Tortoise.close_connections()
     logging.info("Sentinel shutdown")
@@ -109,7 +119,7 @@ def entry() -> None:
         title="Sentinel",
         port=args.port,
         storage_secret=secrets.token_urlsafe(nbytes=256),
-        reload=True,
+        reload=False,
     )
 
 

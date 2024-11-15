@@ -37,9 +37,7 @@ class SharedPageLayout:
         ):
             # Sentinel icon and page header.
             with ui.element("div").classes("flex items-center gap-6 pl-3"):
-                ui.image("sentinel_server/ui/static/sentinel_logo.png").classes(
-                    "h-18 w-16"
-                )
+                ui.image("/static/sentinel_logo.png").classes("h-18 w-16")
                 ui.label(self._page_header).classes(
                     "text-3xl font-[500] text-[#cad3f5]"
                 )
