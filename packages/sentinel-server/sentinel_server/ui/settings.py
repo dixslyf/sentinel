@@ -1,5 +1,4 @@
 import logging
-import os
 from typing import Any
 
 from nicegui import APIRouter, app, run, ui
@@ -7,7 +6,9 @@ from nicegui.events import ClickEventArguments, GenericEventArguments
 
 import sentinel_server.auth
 import sentinel_server.globals as globals
+import sentinel_server.start
 from sentinel_server.ui import SharedPageLayout
+from sentinel_server.ui.login import logout_user
 from sentinel_server.ui.utils import ConfirmationDialog
 
 logger = logging.getLogger(__name__)
@@ -265,15 +266,9 @@ class SystemSection:
                     "text-md text-[#cad3f5] bg-black rounded-xl hover:bg-gray-500"
                 ).props("no-caps")
 
-    def _restart(self, args: ClickEventArguments) -> None:
-        # Log the user out, but don't explicitly redirect to the login page.
-        # Once the restart is done, NiceGUI should automatically redirect to the login page.
-        app.storage.user.update({"authenticated": False})
-
-        # As suggested by:
-        # https://github.com/zauberzeug/nicegui/discussions/1719#discussioncomment-7159050.
-        # Assumes `ui.run(..., reload=True)`.
-        os.utime(__file__)
+    async def _restart(self, args: ClickEventArguments) -> None:
+        await sentinel_server.start.sentinel_setup()
+        logout_user()
 
 
 @router.page("/settings")

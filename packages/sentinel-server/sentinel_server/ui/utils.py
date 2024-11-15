@@ -37,7 +37,12 @@ class ConfirmationDialog:
         self.background: bool = background
 
         async def on_no_wrapper(args: ClickEventArguments) -> None:
-            self.close()
+            if self.background:
+                self.close()
+            else:
+                self._hide_prompt()
+                self._show_loading()
+
             if on_no is not None:
                 if asyncio.iscoroutinefunction(on_no):
                     await on_no(args)
@@ -46,8 +51,16 @@ class ConfirmationDialog:
                 else:
                     on_no(args)
 
+            if not self.background:
+                self.close()
+
         async def on_yes_wrapper(args: ClickEventArguments) -> None:
-            self.close()
+            if self.background:
+                self.close()
+            else:
+                self._hide_prompt()
+                self._show_loading()
+
             if on_yes is not None:
                 if asyncio.iscoroutinefunction(on_yes):
                     await on_yes(args)
@@ -56,24 +69,50 @@ class ConfirmationDialog:
                 else:
                     on_yes(args)
 
-        with self.dialog, ui.card().classes("w-2/12 h-1/3 gap-8"):
-            ui.markdown(f"**{header}**").classes(
-                "text-2xl text-[#4a4e69] font-bold w-full text-center"
+            if not self.background:
+                self.close()
+
+        with self.dialog:
+            self.prompt_card = ui.card().classes("w-2/12 h-1/3 gap-8")
+            with self.prompt_card:
+                ui.markdown(f"**{header}**").classes(
+                    "text-2xl text-[#4a4e69] font-bold w-full text-center"
+                )
+
+                ui.markdown(f"{body}").classes(
+                    "w-full text-xl text-[#4a4e69] text-center"
+                )
+
+                with ui.grid(columns=2).classes("w-full"):
+                    ui.button("No", on_click=on_no_wrapper).classes(
+                        "text-md text-[#cad3f5] bg-black rounded-xl hover:bg-gray-500"
+                    ).props("no-caps")
+                    ui.button("Yes", on_click=on_yes_wrapper).classes(
+                        "text-md text-[#cad3f5] bg-black rounded-xl hover:bg-gray-500"
+                    ).props("no-caps")
+
+            self.loading_card = ui.card().classes(
+                "w-2/12 h-1/3 gap-8 flex items-center justify-center"
             )
-
-            ui.markdown(f"{body}").classes("w-full text-xl text-[#4a4e69] text-center")
-
-            # Name of the video source.
-            with ui.grid(columns=2).classes("w-full"):
-                ui.button("No", on_click=on_no_wrapper).classes(
-                    "text-md text-[#cad3f5] bg-black rounded-xl hover:bg-gray-500"
-                ).props("no-caps")
-                ui.button("Yes", on_click=on_yes_wrapper).classes(
-                    "text-md text-[#cad3f5] bg-black rounded-xl hover:bg-gray-500"
-                ).props("no-caps")
+            with self.loading_card:
+                ui.spinner(size="md")
 
     def open(self) -> None:
+        self._show_prompt()
+        self._hide_loading()
         self.dialog.open()
 
     def close(self) -> None:
         self.dialog.close()
+
+    def _show_prompt(self) -> None:
+        self.prompt_card.set_visibility(True)
+
+    def _hide_prompt(self) -> None:
+        self.prompt_card.set_visibility(False)
+
+    def _show_loading(self) -> None:
+        self.loading_card.set_visibility(True)
+
+    def _hide_loading(self) -> None:
+        self.loading_card.set_visibility(False)
