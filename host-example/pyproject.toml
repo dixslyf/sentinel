@@ -1,0 +1,16 @@
+[tool.poetry]
+description = "Example of hosting Sentinel."
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.12"
+sentinel-server = { path = "../packages/sentinel-server" }
+sentinel-opencv = { path = "../packages/plugins/sentinel-opencv" }
+sentinel-desktop-notification-subscriber = { path = "../packages/plugins/sentinel-desktop-notification-subscriber" }
+sentinel-ultralytics = { path = "../packages/plugins/sentinel-ultralytics" }
+sentinel-remote-detector = { path = "../packages/plugins/sentinel-remote-detector" }
+sentinel-websocket-subscriber = { path = "../packages/plugins/sentinel-websocket-subscriber" }
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

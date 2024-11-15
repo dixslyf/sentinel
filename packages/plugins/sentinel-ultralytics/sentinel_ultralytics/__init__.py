@@ -1,13 +1,21 @@
-from collections.abc import Iterable
 from enum import Enum, auto
 
 import ultralytics
-from sentinel_core.alert import Subscriber
-from sentinel_core.plugins import Plugin
-from sentinel_core.video import Frame, VideoStream
-from sentinel_core.video.detect import (BoundingBox, Detection,
-                                        DetectionResult, Detector,
-                                        PredictedCategory)
+from sentinel_core.plugins import (
+    Choice,
+    ComponentArgDescriptor,
+    ComponentDescriptor,
+    ComponentKind,
+    Plugin,
+)
+from sentinel_core.video import Frame
+from sentinel_core.video.detect import (
+    BoundingBox,
+    Detection,
+    DetectionResult,
+    PredictedCategory,
+    SyncDetector,
+)
 
 
 class ModelType(Enum):
@@ -35,7 +43,7 @@ class ModelType(Enum):
             raise AssertionError("Unreachable code")
 
 
-class UltralyticsDetector(Detector):
+class UltralyticsDetector(SyncDetector):
     def __init__(self, model_type: str | ModelType, model_path: str):
         if isinstance(model_type, str):
             try:
@@ -49,12 +57,12 @@ class UltralyticsDetector(Detector):
         model_class = model_type.to_model_class()
         self._model = model_class(model_path)
 
-    async def detect(self, frame: Frame) -> DetectionResult:
+    def detect(self, frame: Frame) -> DetectionResult:
         detections = []
         results = self._model(frame.data, verbose=False)
         for result in results:
             boxes = result.boxes
-            for (cls, conf, xywh) in zip(boxes.cls, boxes.conf, boxes.xywh):
+            for cls, conf, xywh in zip(boxes.cls, boxes.conf, boxes.xywh):
                 cls_str = result.names[int(cls.item())]
 
                 pred_categories = [PredictedCategory(cls_str, conf.item())]
@@ -67,18 +75,45 @@ class UltralyticsDetector(Detector):
                 w = xywh[2].item()
                 h = xywh[3].item()
                 bounding_box = BoundingBox(
-                    int(x - w / 2),
-                    int(y - h / 2),
-                    int(w),
-                    int(h)
+                    int(x - w / 2), int(y - h / 2), int(w), int(h)
                 )
                 detections.append(Detection(pred_categories, bounding_box))
 
-        return DetectionResult(frame.timestamp or -1, frame, detections)
+        return DetectionResult(frame, detections)
 
 
-class UltralyticsPlugin(Plugin):
-    name = "Ultralytics"
-    video_stream_classes: Iterable[type[VideoStream]] = set()
-    detector_classes: Iterable[type[Detector]] = {UltralyticsDetector}
-    subscriber_classes: Iterable[type[Subscriber]] = set()
+_ultralytics_detector_descriptor = ComponentDescriptor(
+    display_name="Ultralytics",
+    kind=ComponentKind.SyncDetector,
+    cls=UltralyticsDetector,
+    args=(
+        ComponentArgDescriptor(
+            display_name="Model Type",
+            arg_name="model_type",
+            option_type=str,
+            required=True,
+            default=None,
+            choices=frozenset(
+                (
+                    Choice.from_string("YOLO"),
+                    Choice.from_string("SAM"),
+                    Choice.from_string("FastSAM"),
+                    Choice.from_string("YOLO_NAS"),
+                    Choice.from_string("RT_DETR"),
+                    Choice.from_string("YOLO_WORLD"),
+                )
+            ),
+        ),
+        ComponentArgDescriptor(
+            display_name="Model Path",
+            arg_name="model_path",
+            option_type=str,
+            required=True,
+            default=None,
+            # TODO: add a validator
+        ),
+    ),
+)
+
+
+plugin = Plugin(frozenset({_ultralytics_detector_descriptor}))

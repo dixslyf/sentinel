@@ -1,39 +1,66 @@
-from abc import abstractmethod
-from collections.abc import Iterable
+import dataclasses
+from enum import Enum
+from typing import Any, Callable, Optional, Self
 
-from sentinel_core.alert import Subscriber
-from sentinel_core.video import VideoStream
-from sentinel_core.video.detect import Detector
+from sentinel_core.alert import AsyncSubscriber, SyncSubscriber
+from sentinel_core.video import AsyncVideoStream, SyncVideoStream
+from sentinel_core.video.detect import AsyncDetector, SyncDetector
 
 
+@dataclasses.dataclass(frozen=True)
+class Choice:
+    display_name: str
+    value: Any
+
+    @classmethod
+    def from_string(cls, value: str) -> Self:
+        return cls(display_name=value, value=value)
+
+
+@dataclasses.dataclass(frozen=True)
+class ComponentArgDescriptor[T]:
+    display_name: str
+    arg_name: str
+    option_type: T
+    required: bool
+    default: Optional[T] = None
+    choices: Optional[frozenset[Choice]] = None
+    validator: Optional[Callable[[T], Optional[str]]] = None
+
+
+class ComponentKind(Enum):
+    AsyncVideoStream = 0
+    SyncVideoStream = 1
+    AsyncDetector = 2
+    SyncDetector = 3
+    AsyncSubscriber = 4
+    SyncSubscriber = 5
+
+
+@dataclasses.dataclass(frozen=True)
+class ComponentDescriptor[
+    T: AsyncVideoStream
+    | SyncVideoStream
+    | AsyncDetector
+    | SyncDetector
+    | AsyncSubscriber
+    | SyncSubscriber
+]:
+    display_name: str
+    kind: ComponentKind
+    cls: type[T]
+    args: tuple[ComponentArgDescriptor, ...]
+    args_transform: Optional[Callable[[dict[str, Any]], dict[str, Any]]] = None
+
+
+@dataclasses.dataclass(frozen=True)
 class Plugin:
-    def __init__(self):
-        pass
+    components: frozenset[ComponentDescriptor]
 
-    @property
-    @abstractmethod
-    def name(self) -> str:
-        """
-        Returns the name of the plugin.
-        """
-
-    @property
-    @abstractmethod
-    def video_stream_classes(self) -> Iterable[type[VideoStream]]:
-        """
-        Returns the video source classes provided by this plugin.
-        """
-
-    @property
-    @abstractmethod
-    def detector_classes(self) -> Iterable[type[Detector]]:
-        """
-        Returns the object detector classes provided by this plugin.
-        """
-
-    @property
-    @abstractmethod
-    def subscriber_classes(self) -> Iterable[type[Subscriber]]:
-        """
-        Returns the subscriber classes provided by this plugin.
-        """
+    def find_component(
+        self, predicate: Callable[[ComponentDescriptor], bool]
+    ) -> Optional[ComponentDescriptor]:
+        return next(
+            (comp for comp in self.components if predicate(comp)),
+            None,
+        )

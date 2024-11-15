@@ -11,7 +11,7 @@ ultralytics = "^8.3.7"
 dill = "^0.3.9"
 
 [tool.poetry.plugins."sentinel.plugins"]
-sentinel-ultralytics = "sentinel_ultralytics:UltralyticsPlugin"
+sentinel-ultralytics = "sentinel_ultralytics:plugin"
 
 [build-system]
 requires = ["poetry-core"]

@@ -1,0 +1,37 @@
+[tool.poetry]
+name = "sentinel-server"
+version = "0.1.0"
+description = "Server for Sentinel, a home security and alert system."
+authors = ["Dixon Sean Low Yan Feng", "Keith Neo Kai Si"]
+
+[tool.poetry.dependencies]
+sentinel-core = { path = "../sentinel-core", develop = true }
+python = "^3.12"
+opencv-python = "^4.10.0.84"
+aioreactive = "^0.20.0"
+expression = "^5.3.0"
+fastapi = {extras = ["standard"], version = "^0.115.2"}
+tortoise-orm = "^0.21.7"
+bcrypt = "^4.2.0"
+toml = "^0.10.2"
+platformdirs = "^4.3.6"
+nicegui = "^2.4.0"
+watchgod = "^0.8.2"
+pillow = "^11.0.0"
+psutil = "^6.1.0"
+
+[tool.poetry.scripts]
+sentinel-server = "sentinel_server.start:entry"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.3"
+pytest-mock = "^3.14.0"
+pytest-asyncio = "^0.24.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+# PyTest configuration.
+[tool.pytest.ini_options]
+asyncio_default_fixture_loop_scope = "function"

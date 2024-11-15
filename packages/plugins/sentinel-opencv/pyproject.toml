@@ -10,7 +10,7 @@ python = "^3.12"
 opencv-python = "^4.10.0.84"
 
 [tool.poetry.plugins."sentinel.plugins"]
-sentinel-opencv = "sentinel_opencv:OpenCVPlugin"
+sentinel-opencv = "sentinel_opencv:plugin"
 
 [build-system]
 requires = ["poetry-core"]

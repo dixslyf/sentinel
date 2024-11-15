@@ -1,10 +1,12 @@
-from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Optional, Protocol
+
+from dataclasses_json import dataclass_json
 
 from sentinel_core.video import Frame
 
 
+@dataclass_json
 @dataclass
 class BoundingBox:
     x: int
@@ -13,31 +15,54 @@ class BoundingBox:
     height: int
 
 
+@dataclass_json
 @dataclass
 class PredictedCategory:
     name: str
     score: Optional[float]
 
 
+@dataclass_json
 @dataclass
 class Detection:
-    pred_categories: Sequence[PredictedCategory]
+    pred_categories: list[PredictedCategory]
     bounding_box: BoundingBox
 
 
+@dataclass_json
 @dataclass
 class DetectionResult:
-    timestamp: float
     frame: Frame
-    detections: Sequence[Detection]
+    detections: list[Detection]
 
 
-class Detector(Protocol):
+class AsyncDetector(Protocol):
     """
-    Protocol for raw object detectors.
+    Protocol for raw asynchronous object detectors.
     """
 
     async def detect(self, frame: Frame) -> DetectionResult:
         """
         Detects objects in the given frame asynchronously.
+        """
+
+    async def clean_up(self) -> None:
+        """
+        Cleans up any resources associated with this detector.
+        """
+
+
+class SyncDetector(Protocol):
+    """
+    Protocol for raw synchronous object detectors.
+    """
+
+    def detect(self, frame: Frame) -> DetectionResult:
+        """
+        Detects objects in the given frame synchronously.
+        """
+
+    def clean_up(self) -> None:
+        """
+        Cleans up any resources associated with this detector.
         """

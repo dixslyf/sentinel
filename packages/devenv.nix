@@ -1,4 +1,8 @@
-{ pkgs, lib, config, inputs, ... }:
+{
+  pkgs,
+  inputs,
+  ...
+}:
 
 let
   pkgs-unstable = inputs.nixpkgs-unstable.legacyPackages.${pkgs.stdenv.system};
