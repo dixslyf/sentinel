@@ -6,11 +6,6 @@ authors = ["Dixon Sean Low Yan Feng", "Keith Neo Kai Si"]
 
 [tool.poetry.dependencies]
 sentinel-core = { path = "../sentinel-core", develop = true }
-sentinel-opencv = { path = "../plugins/sentinel-opencv", develop = true }
-sentinel-desktop-notification-subscriber = { path = "../plugins/sentinel-desktop-notification-subscriber", develop = true }
-sentinel-ultralytics = { path = "../plugins/sentinel-ultralytics", develop = true }
-sentinel-remote-detector = { path = "../plugins/sentinel-remote-detector", develop = true }
-sentinel-websocket-subscriber = { path = "../plugins/sentinel-websocket-subscriber", develop = true }
 python = "^3.12"
 opencv-python = "^4.10.0.84"
 aioreactive = "^0.20.0"
