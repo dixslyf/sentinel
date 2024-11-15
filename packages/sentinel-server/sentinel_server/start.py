@@ -21,9 +21,6 @@ import sentinel_server.ui.settings
 
 
 def app_setup():
-    # Static files.
-    app.add_static_files("/static", "static")
-
     # Set up routers.
     app.include_router(sentinel_server.ui.login.router)
     app.include_router(sentinel_server.ui.alerts.router)

@@ -44,7 +44,7 @@ def login_page() -> Optional[RedirectResponse]:
             with ui.element("div").classes(
                 "w-full flex gap-10 items-center justify-center"
             ):
-                ui.image("/static/sentinel_logo.png").classes("h-[6.5rem] w-24")
+                ui.image("static/sentinel_logo.png").classes("h-[6.5rem] w-24")
 
                 with ui.element("div").classes("flex gap-10 flex-col gap-3"):
                     ui.label("Welcome!").classes(
