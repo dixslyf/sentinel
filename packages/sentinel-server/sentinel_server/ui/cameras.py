@@ -448,8 +448,7 @@ class CameraView(AsyncObserver[Frame]):
 
         await self.sub.dispose_async()
 
-        vid_src = globals.video_source_manager.video_sources[self.id]
-        logger.info(f'Stopped displaying frames for "{vid_src.name}" (id: {self.id})')
+        logger.info(f"Stopped displaying frames for video source (id: {self.id})")
 
     async def asend(self, frame: Frame):
         pil_image = Image.fromarray(frame.data)

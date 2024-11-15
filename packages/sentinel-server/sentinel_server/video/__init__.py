@@ -319,6 +319,9 @@ class VideoSourceManager:
         await self.disable_video_source(id)
         await vid_src.db_info.delete()
 
+        for subscription in vid_src.subscribers.values():
+            if subscription is not None:
+                await subscription.dispose_async()
         del self._video_sources[id]
 
         await self._alert_manager.mark_source_deleted(vid_src.name)
@@ -416,11 +419,15 @@ class VideoSourceManager:
 
     async def unsubscribe_from(
         self, id: int, observer: AsyncObserver[DetectionResult], _hard: bool = True
-    ) -> None:
-        vid_src = self._video_sources[id]
+    ) -> bool:
+        vid_src = self._video_sources.get(id)
+        if vid_src is None:
+            return False
+
         subscription = vid_src.subscribers[observer]
         if subscription is not None:
             await subscription.dispose_async()
+            vid_src.subscribers[observer] = None
 
         if _hard:
             del vid_src.subscribers[observer]
@@ -428,6 +435,7 @@ class VideoSourceManager:
         logger.info(
             f'Subscription removed from "{vid_src.name}" (id: {id}) {"(hard)" if _hard else ""}'
         )
+        return True
 
     def add_task_exception_callback(self, callback: Callable[[BaseException], None]):
         self._task_exception_callbacks.append(callback)
